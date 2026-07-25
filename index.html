@@ -11,6 +11,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- HTML5-QRCode Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- SheetJS (XLSX Parser for Excel File Uploads) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Firebase SDK v10 (Compat Version) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -216,7 +218,7 @@
                             <i data-lucide="tags" class="w-5 h-5 text-amber-500"></i>
                             Katalog & Program Promo Bazaar
                         </h2>
-                        <p class="text-xs text-slate-500">Kelola program promosi khusus (B1G1, Paket Bundle, Diskon %, Free Bonus) dan kaitkan dengan SKU barang.</p>
+                        <p class="text-xs text-slate-500">Kelola program promosi khusus (B1G1, B2G1, Paket Bundle, Diskon %, Free Bonus) dan kaitkan dengan SKU barang.</p>
                     </div>
                     <button onclick="window.openPromoModal()" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg flex items-center gap-2 transition shadow-sm">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i> Buat Program Promo Baru
@@ -245,7 +247,7 @@
                             <i data-lucide="trash-2" class="w-4 h-4"></i> Hapus Semua SKU
                         </button>
                         <button onclick="window.openBulkModal()" class="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition">
-                            <i data-lucide="file-up" class="w-4 h-4"></i> Upload Bulk SKU (CSV / Excel)
+                            <i data-lucide="file-up" class="w-4 h-4"></i> Upload Bulk SKU (Excel / CSV)
                         </button>
                         <button onclick="window.openProductModal()" class="flex-1 sm:flex-initial px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition shadow-sm">
                             <i data-lucide="plus-circle" class="w-4 h-4"></i> Tambah SKU Baru
@@ -530,7 +532,7 @@
         <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl border border-slate-200">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
-                    <i data-lucide="file-up" class="w-5 h-5 text-blue-600"></i> Upload Bulk SKU (CSV / Copy Paste Excel)
+                    <i data-lucide="file-up" class="w-5 h-5 text-blue-600"></i> Upload Bulk SKU (Excel / CSV / Copy Paste)
                 </h3>
                 <button onclick="window.closeBulkModal()" class="text-slate-400 hover:text-slate-600 p-1">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -538,17 +540,27 @@
             </div>
 
             <div class="space-y-3 text-xs">
-                <div class="flex items-center justify-between bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div class="space-y-0.5">
-                        <p class="font-semibold text-blue-900">Format Kolom Data SKU:</p>
-                        <code class="text-[11px] text-blue-800 font-mono">Barcode, SKU, Brand, Subsidiary, Nama Barang, Harga, Stok, [Catatan Promo]</code>
-                    </div>
-                    <button type="button" onclick="window.downloadSkuTemplate()" class="px-3 py-1.5 bg-white hover:bg-blue-100 text-blue-700 border border-blue-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Template CSV
+                <!-- Template & Upload Controls -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <!-- Direct File Upload Dropzone -->
+                    <label class="flex items-center justify-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 border-2 border-dashed border-blue-300 rounded-xl cursor-pointer transition text-blue-800 font-semibold text-xs">
+                        <i data-lucide="upload-cloud" class="w-5 h-5 text-blue-600"></i>
+                        <span>Upload File Excel (.xlsx / .csv)</span>
+                        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" onchange="window.handleExcelFileUpload(event)" class="hidden">
+                    </label>
+
+                    <!-- Template Download Button -->
+                    <button type="button" onclick="window.downloadSkuTemplate()" class="p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition">
+                        <i data-lucide="download" class="w-4 h-4 text-slate-600"></i> Download Template CSV
                     </button>
                 </div>
 
-                <textarea id="bulkInputText" rows="6" placeholder="Atau langsung copy-paste baris data dari Excel di sini:&#10;8991001, SNK-01, Lays, PT Indofood, Snack Lays Potato Chips, 12000, 40, Buy 1 Get 1&#10;8991002, DRK-01, Nescafe, PT Nestle, Kopi Cold Brew Botol, 25000, 30, Diskon 20%" class="w-full p-3 border border-slate-300 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500"></textarea>
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-0.5">
+                    <p class="font-semibold text-slate-700">Urutan Kolom Data Excel (Header Opsional):</p>
+                    <code class="text-[11px] text-blue-700 font-mono">Barcode, SKU, Brand, Subsidiary, Nama Barang, Harga, Stok, [Catatan Promo]</code>
+                </div>
+
+                <textarea id="bulkInputText" rows="5" placeholder="Atau langsung copy-paste baris data dari Excel di sini:&#10;8991001	SNK-01	Lays	PT Indofood	Snack Lays Potato Chips	12000	40	Buy 1 Get 1&#10;8991002	DRK-01	Nescafe	PT Nestle	Kopi Cold Brew Botol	25000	30	Diskon 20%" class="w-full p-3 border border-slate-300 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500"></textarea>
 
                 <div id="bulkPreviewContainer" class="hidden space-y-2">
                     <h4 class="font-semibold text-slate-700">Hasil Parsing (<span id="bulkPreviewCount">0</span> barang terdeteksi):</h4>
@@ -556,7 +568,7 @@
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" onclick="window.parseAndPreviewBulkData()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50">Pratinjau Data</button>
+                    <button type="button" onclick="window.parseAndPreviewBulkData()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50">Pratinjau Teks</button>
                     <button type="button" onclick="window.confirmBulkImport()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-sm">Konfirmasi & Simpan Semua SKU</button>
                 </div>
             </div>
@@ -1802,6 +1814,67 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             window.showToast('Template CSV berhasil diunduh!', 'success');
+        };
+
+        // Direct Excel File (.xlsx / .xls / .csv) Handler using SheetJS
+        window.handleExcelFileUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    if (!jsonData || jsonData.length === 0) {
+                        window.showToast('File Excel kosong atau tidak terbaca!', 'warning');
+                        return;
+                    }
+
+                    const items = [];
+                    jsonData.forEach((row, idx) => {
+                        if (!row || row.length < 6) return;
+                        
+                        const col0 = String(row[0] || '').trim();
+                        // Skip header row if present
+                        if (col0.toLowerCase() === 'barcode' || col0.toLowerCase() === 'kode barcode') return;
+
+                        items.push({
+                            barcode: col0,
+                            sku: String(row[1] || '').trim(),
+                            brand: String(row[2] || '').trim(),
+                            subsidiary: String(row[3] || '').trim(),
+                            name: String(row[4] || '').trim(),
+                            price: parseFloat(row[5]) || 0,
+                            stock: parseInt(row[6]) || 0,
+                            promoRemark: String(row[7] || '').trim()
+                        });
+                    });
+
+                    if (items.length === 0) {
+                        window.showToast('Tidak ada baris data SKU valid yang terdeteksi di file Excel!', 'warning');
+                        return;
+                    }
+
+                    window.parsedBulkItems = items;
+                    document.getElementById('bulkPreviewCount').textContent = items.length;
+                    document.getElementById('bulkPreviewList').innerHTML = items.map(i => `
+                        <div>${i.barcode} | ${i.sku} | ${i.name} ${i.promoRemark ? `[Promo: ${i.promoRemark}]` : ''} | Rp ${i.price.toLocaleString('id-ID')} | Stok: ${i.stock}</div>
+                    `).join('');
+
+                    document.getElementById('bulkPreviewContainer').classList.remove('hidden');
+                    window.showToast(`Berhasil membaca ${items.length} item dari file Excel!`, 'success');
+
+                } catch (err) {
+                    console.error("Excel parse error:", err);
+                    window.showToast('Gagal membaca file Excel! Pastikan format file sesuai.', 'warning');
+                }
+            };
+            reader.readAsArrayBuffer(file);
         };
 
         window.parseAndPreviewBulkData = function() {
