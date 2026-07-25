@@ -516,11 +516,11 @@
 
             <div class="space-y-3 text-xs">
                 <p class="text-slate-600">
-                    Paste kode <code class="font-mono bg-slate-100 px-1 py-0.5 rounded text-orange-700">firebaseConfig</code> dari Firebase Console kamu untuk mengaktifkan **100% Real-time Multi-Device Sync**.
+                    Paste teks <code class="font-mono bg-slate-100 px-1 py-0.5 rounded text-orange-700">const firebaseConfig = { ... };</code> langsung dari Firebase Console kamu untuk mengaktifkan **100% Real-time Multi-Device Sync**.
                 </p>
                 <div>
-                    <label class="block font-medium text-slate-700 mb-1">Firebase Config Object (atau JSON) *</label>
-                    <textarea id="firebaseConfigInput" rows="7" placeholder='{&#10;  "apiKey": "AIzaSyD...",&#10;  "authDomain": "bazaar-kasir.firebaseapp.com",&#10;  "databaseURL": "https://bazaar-kasir-default-rtdb.asia-southeast1.firebasedatabase.app",&#10;  "projectId": "bazaar-kasir"&#10;}' class="w-full p-3 border border-slate-300 rounded-lg font-mono text-xs focus:ring-1 focus:ring-orange-500"></textarea>
+                    <label class="block font-medium text-slate-700 mb-1">Firebase Config Snippet *</label>
+                    <textarea id="firebaseConfigInput" rows="8" placeholder='const firebaseConfig = {&#10;  apiKey: "AIzaSyD...",&#10;  authDomain: "kasir-bazzar.firebaseapp.com",&#10;  databaseURL: "https://kasir-bazzar-default-rtdb.asia-southeast1.firebasedatabase.app",&#10;  projectId: "kasir-bazzar"&#10;};' class="w-full p-3 border border-slate-300 rounded-lg font-mono text-xs focus:ring-1 focus:ring-orange-500"></textarea>
                 </div>
 
                 <div class="flex justify-between items-center pt-2 border-t border-slate-100">
@@ -643,6 +643,51 @@
             });
         });
 
+        // Helper function to extract key values from standard snippet strings without syntax breaks
+        window.extractFirebaseKey = function(rawText, key) {
+            const regex = new RegExp(key + '\\s*:\\s*["\']([^"\']+)["\']');
+            const match = rawText.match(regex);
+            return match ? match[1] : '';
+        };
+
+        window.parseFirebaseConfig = function(rawText) {
+            if (!rawText || !rawText.trim()) return null;
+            const str = rawText.trim();
+
+            // Attempt 1: Standard JSON parse
+            try {
+                if (str.startsWith('{') && str.endsWith('}')) {
+                    const parsed = JSON.parse(str);
+                    if (parsed.apiKey) return parsed;
+                }
+            } catch (err) { /* fallback to extraction */ }
+
+            // Attempt 2: Bulletproof Regex Key Extraction from JS snippet
+            const apiKey = window.extractFirebaseKey(str, 'apiKey');
+            const authDomain = window.extractFirebaseKey(str, 'authDomain');
+            const databaseURL = window.extractFirebaseKey(str, 'databaseURL');
+            const projectId = window.extractFirebaseKey(str, 'projectId');
+            const storageBucket = window.extractFirebaseKey(str, 'storageBucket');
+            const messagingSenderId = window.extractFirebaseKey(str, 'messagingSenderId');
+            const appId = window.extractFirebaseKey(str, 'appId');
+            const measurementId = window.extractFirebaseKey(str, 'measurementId');
+
+            if (apiKey && (projectId || databaseURL)) {
+                return {
+                    apiKey,
+                    authDomain,
+                    databaseURL: databaseURL || `https://${projectId}-default-rtdb.asia-southeast1.firebasedatabase.app`,
+                    projectId,
+                    storageBucket,
+                    messagingSenderId,
+                    appId,
+                    measurementId
+                };
+            }
+
+            return null;
+        };
+
         // --- FIREBASE REALTIME DATABASE INITIALIZATION & LISTENERS ---
         window.initFirebaseFromStorage = function() {
             const rawConfig = localStorage.getItem('bazaar_firebase_config');
@@ -660,22 +705,9 @@
             }
 
             try {
-                let configObj = null;
-                if (rawConfig.trim().startsWith('{')) {
-                    configObj = JSON.parse(rawConfig);
-                } else {
-                    // Try parsing JS object format
-                    const cleaned = rawConfig
-                        .replace(/const\s+firebaseConfig\s*=\s*/, '')
-                        .replace(/let\s+firebaseConfig\s*=\s*/, '')
-                        .replace(/var\s+firebaseConfig\s*=\s*/, '')
-                        .replace(/;/g, '')
-                        .replace(/([a-zA-Z0-9_]+)\s*:/g, '"$1":')
-                        .replace(/'/g, '"');
-                    configObj = JSON.parse(cleaned);
-                }
+                const configObj = window.parseFirebaseConfig(rawConfig);
 
-                if (configObj && firebase) {
+                if (configObj && typeof firebase !== 'undefined') {
                     if (!firebase.apps.length) {
                         firebase.initializeApp(configObj);
                     }
@@ -708,10 +740,13 @@
                         localStorage.setItem('bazaar_transactions', JSON.stringify(window.transactions));
                         window.refreshAllViews();
                     });
+                } else {
+                    throw new Error("Invalid config object parsed.");
                 }
             } catch (err) {
                 console.error("Firebase init error:", err);
-                window.showToast("Gagal menginisialisasi Firebase. Cek format config!", "warning");
+                if (badgeDot) badgeDot.className = "w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse";
+                if (badgeText) badgeText.textContent = "Config Error";
             }
         };
 
@@ -980,7 +1015,6 @@
             const MIN_GIMMICK_SPEND = 500000;
 
             if (!item.isGimmick) {
-                // Calculate paid subtotal excluding this item
                 const paidSubtotal = window.cart.reduce((sum, itm, idx) => {
                     if (idx === index || itm.isGimmick) return sum;
                     return sum + (itm.price * itm.qty);
@@ -1511,6 +1545,12 @@
             const rawVal = document.getElementById('firebaseConfigInput').value.trim();
             if (!rawVal) {
                 window.showToast('Masukkan kode Firebase Config terlebih dahulu!', 'warning');
+                return;
+            }
+
+            const parsedConfig = window.parseFirebaseConfig(rawVal);
+            if (!parsedConfig || !parsedConfig.apiKey) {
+                window.showToast('Format Firebase Config tidak valid! Pastikan menyalin dari Firebase Console.', 'warning');
                 return;
             }
 
