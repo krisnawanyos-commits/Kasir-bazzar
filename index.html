@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kasir & Rekap Bazaar Kantor (Multi-Day)</title>
+    <title>Kasir & Rekap Bazaar Kantor (Firebase Realtime)</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,6 +11,9 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- HTML5-QRCode Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Firebase SDK v10 (Compat Version for Easy Single-File Integration) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -18,7 +21,6 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Custom scrollbar for sleek tables and cart list */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -45,29 +47,25 @@
     <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/30">
-                    <i data-lucide="store" class="w-6 h-6"></i>
+                <div class="bg-orange-600 p-2 rounded-xl text-white shadow-lg shadow-orange-500/30">
+                    <i data-lucide="zap" class="w-6 h-6"></i>
                 </div>
                 <div>
                     <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
-                        Kasir & Rekap Bazaar Kantor
-                        <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-0.5 rounded-full font-semibold uppercase flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                            Cloud Sync Active
+                        Kasir Bazaar Kantor
+                        <span id="firebaseStatusBadge" class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2.5 py-0.5 rounded-full font-semibold uppercase flex items-center gap-1.5">
+                            <span id="firebaseStatusDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                            <span id="firebaseStatusText">Firebase Standby</span>
                         </span>
                     </h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Acuan Data Sales, Stok & Laporan Multi-Hari Bazaar</p>
+                    <p class="text-xs text-slate-400 hidden sm:block">Database Realtime Sync Multi-HP & Profile Browser</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-2 sm:gap-3">
-                <button onclick="window.syncDataWithCloud(true)" title="Sinkronisasi Manual" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1 text-xs">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">Sync Live</span>
-                </button>
-                <button onclick="window.openGoogleSheetModal()" id="sheetStatusBadge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-                    <span id="sheetStatusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span id="sheetStatusText">Connect Google Sheet</span>
+                <button onclick="window.openFirebaseModal()" id="btnConnectFirebase" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 hover:bg-orange-700 text-white transition shadow-sm">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <span id="btnConnectFirebaseText">Connect Firebase</span>
                 </button>
                 <button onclick="window.confirmResetData()" title="Reset Data Lokal" class="p-2 rounded-lg bg-slate-800 hover:bg-red-950/60 hover:text-red-400 text-slate-400 border border-slate-700 transition">
                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
@@ -102,7 +100,7 @@
         <!-- TAB 1: SHEET KASIR -->
         <div id="view-kasir" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <!-- Product Catalog Section (Left side - 7 cols) -->
+            <!-- Product Catalog Section -->
             <div class="lg:col-span-7 space-y-4">
                 
                 <!-- Search & Filter Controls -->
@@ -120,7 +118,7 @@
 
                     <!-- Brand Chips Filter -->
                     <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="brandFilterChips">
-                        <!-- Chips dynamically rendered via JS -->
+                        <!-- Chips dynamically rendered -->
                     </div>
                 </div>
 
@@ -130,7 +128,7 @@
                 </div>
             </div>
 
-            <!-- Cart & Checkout Section (Right side - 5 cols) -->
+            <!-- Cart & Checkout Section -->
             <div class="lg:col-span-5">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 sticky top-36 overflow-hidden flex flex-col max-h-[calc(100vh-160px)]">
                     
@@ -338,9 +336,6 @@
                         </select>
                     </div>
                     <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button onclick="window.syncDataWithCloud(true)" class="flex-1 sm:flex-initial px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition shadow-sm">
-                            <i data-lucide="sheet" class="w-4 h-4"></i> Sync Google Sheets
-                        </button>
                         <button onclick="window.exportCSV()" class="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition">
                             <i data-lucide="download" class="w-4 h-4"></i> Download CSV Rekap
                         </button>
@@ -507,30 +502,33 @@
         </div>
     </div>
 
-    <!-- MODAL: Connect Google Sheet Webhook -->
-    <div id="sheetModal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+    <!-- MODAL: Connect Firebase Realtime Database -->
+    <div id="firebaseModal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl border border-slate-200">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
-                    <i data-lucide="sheet" class="w-5 h-5 text-emerald-600"></i> Hubungkan Google Sheets Webhook
+                    <i data-lucide="zap" class="w-5 h-5 text-orange-600"></i> Hubungkan Firebase Realtime Database
                 </h3>
-                <button onclick="window.closeGoogleSheetModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <button onclick="window.closeFirebaseModal()" class="text-slate-400 hover:text-slate-600 p-1">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <div class="space-y-3 text-xs">
                 <p class="text-slate-600">
-                    Masukkan **Web App URL** dari Google Apps Script agar semua data Master SKU, stok, dan transaksi ter-sync & ter-update secara otomatis di semua browser/HP kasir!
+                    Paste kode <code class="font-mono bg-slate-100 px-1 py-0.5 rounded text-orange-700">firebaseConfig</code> dari Firebase Console kamu untuk mengaktifkan **100% Real-time Multi-Device Sync**.
                 </p>
                 <div>
-                    <label class="block font-medium text-slate-700 mb-1">Google Apps Script Web App URL *</label>
-                    <input type="url" id="googleSheetUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500">
+                    <label class="block font-medium text-slate-700 mb-1">Firebase Config Object (atau JSON) *</label>
+                    <textarea id="firebaseConfigInput" rows="7" placeholder='{&#10;  "apiKey": "AIzaSyD...",&#10;  "authDomain": "bazaar-kasir.firebaseapp.com",&#10;  "databaseURL": "https://bazaar-kasir-default-rtdb.asia-southeast1.firebasedatabase.app",&#10;  "projectId": "bazaar-kasir"&#10;}' class="w-full p-3 border border-slate-300 rounded-lg font-mono text-xs focus:ring-1 focus:ring-orange-500"></textarea>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                    <button type="button" onclick="window.closeGoogleSheetModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-medium">Batal</button>
-                    <button type="button" onclick="window.saveGoogleSheetUrl()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold shadow-sm">Simpan & Sync</button>
+                <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                    <button type="button" onclick="window.clearFirebaseConfig()" class="text-red-600 hover:underline text-xs font-semibold">Putus Koneksi</button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="window.closeFirebaseModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-medium">Batal</button>
+                        <button type="button" onclick="window.saveFirebaseConfig()" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold shadow-sm">Simpan & Hubungkan</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -578,7 +576,7 @@
         window.products = JSON.parse(localStorage.getItem('bazaar_products')) || [];
         window.cart = JSON.parse(localStorage.getItem('bazaar_cart')) || [];
         window.transactions = JSON.parse(localStorage.getItem('bazaar_transactions')) || [];
-        window.googleSheetUrl = localStorage.getItem('bazaar_sheet_url') || '';
+        window.firebaseDb = null;
         window.selectedBrandFilter = '';
         window.activePaymentMethod = 'QRIS';
         window.html5QrcodeScanner = null;
@@ -588,7 +586,10 @@
             if (window.lucide) {
                 lucide.createIcons();
             }
-            window.updateGoogleSheetBadgeStatus();
+
+            // Init Firebase Realtime Database
+            window.initFirebaseFromStorage();
+
             window.populateBrandFilter();
             window.populateDayFilter();
             window.renderProducts();
@@ -607,8 +608,8 @@
 
                         // Find matching product by barcode or SKU
                         const matched = window.products.find(p => 
-                            p.barcode.toLowerCase() === query || 
-                            p.sku.toLowerCase() === query
+                            (p.barcode && String(p.barcode).toLowerCase() === query) || 
+                            (p.sku && String(p.sku).toLowerCase() === query)
                         );
 
                         if (matched) {
@@ -640,19 +641,86 @@
                     window.refreshAllViews();
                 }
             });
+        });
 
-            // Start background polling if Google Sheets is connected
-            if (window.googleSheetUrl) {
-                window.syncDataWithCloud(false);
+        // --- FIREBASE REALTIME DATABASE INITIALIZATION & LISTENERS ---
+        window.initFirebaseFromStorage = function() {
+            const rawConfig = localStorage.getItem('bazaar_firebase_config');
+            const badgeDot = document.getElementById('firebaseStatusDot');
+            const badgeText = document.getElementById('firebaseStatusText');
+            const badgeBox = document.getElementById('firebaseStatusBadge');
+            const btnText = document.getElementById('btnConnectFirebaseText');
+
+            if (!rawConfig) {
+                if (badgeDot) badgeDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse";
+                if (badgeText) badgeText.textContent = "Firebase Standby";
+                if (badgeBox) badgeBox.className = "text-[10px] bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2.5 py-0.5 rounded-full font-semibold uppercase flex items-center gap-1.5";
+                if (btnText) btnText.textContent = "Connect Firebase";
+                return;
             }
 
-            // Polling background timer every 10 seconds
-            setInterval(() => {
-                if (window.googleSheetUrl) {
-                    window.syncDataWithCloud(false);
+            try {
+                let configObj = null;
+                if (rawConfig.trim().startsWith('{')) {
+                    configObj = JSON.parse(rawConfig);
+                } else {
+                    // Try parsing JS object format
+                    const cleaned = rawConfig
+                        .replace(/const\s+firebaseConfig\s*=\s*/, '')
+                        .replace(/let\s+firebaseConfig\s*=\s*/, '')
+                        .replace(/var\s+firebaseConfig\s*=\s*/, '')
+                        .replace(/;/g, '')
+                        .replace(/([a-zA-Z0-9_]+)\s*:/g, '"$1":')
+                        .replace(/'/g, '"');
+                    configObj = JSON.parse(cleaned);
                 }
-            }, 10000);
-        });
+
+                if (configObj && firebase) {
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(configObj);
+                    }
+                    window.firebaseDb = firebase.database();
+
+                    if (badgeDot) badgeDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse";
+                    if (badgeText) badgeText.textContent = "Firebase Live Active";
+                    if (badgeBox) badgeBox.className = "text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-0.5 rounded-full font-semibold uppercase flex items-center gap-1.5";
+                    if (btnText) btnText.textContent = "Connected (Firebase)";
+
+                    // Setup Instant Realtime Listeners
+                    window.firebaseDb.ref('products').on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data) {
+                            window.products = Array.isArray(data) ? data : Object.values(data);
+                        } else {
+                            window.products = [];
+                        }
+                        localStorage.setItem('bazaar_products', JSON.stringify(window.products));
+                        window.refreshAllViews();
+                    });
+
+                    window.firebaseDb.ref('transactions').on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data) {
+                            window.transactions = Array.isArray(data) ? data : Object.values(data);
+                        } else {
+                            window.transactions = [];
+                        }
+                        localStorage.setItem('bazaar_transactions', JSON.stringify(window.transactions));
+                        window.refreshAllViews();
+                    });
+                }
+            } catch (err) {
+                console.error("Firebase init error:", err);
+                window.showToast("Gagal menginisialisasi Firebase. Cek format config!", "warning");
+            }
+        };
+
+        window.syncToFirebase = function() {
+            if (!window.firebaseDb) return;
+
+            window.firebaseDb.ref('products').set(window.products);
+            window.firebaseDb.ref('transactions').set(window.transactions);
+        };
 
         window.refreshAllViews = function() {
             window.populateBrandFilter();
@@ -759,10 +827,10 @@
             const searchQuery = (document.getElementById('productSearchInput')?.value || '').toLowerCase();
             
             const filtered = window.products.filter(p => {
-                const matchQuery = p.name.toLowerCase().includes(searchQuery) || 
-                                   p.barcode.toLowerCase().includes(searchQuery) || 
-                                   p.sku.toLowerCase().includes(searchQuery) ||
-                                   p.brand.toLowerCase().includes(searchQuery);
+                const matchQuery = (p.name && p.name.toLowerCase().includes(searchQuery)) || 
+                                   (p.barcode && String(p.barcode).toLowerCase().includes(searchQuery)) || 
+                                   (p.sku && String(p.sku).toLowerCase().includes(searchQuery)) ||
+                                   (p.brand && p.brand.toLowerCase().includes(searchQuery));
                 const matchBrand = !window.selectedBrandFilter || p.brand === window.selectedBrandFilter;
                 return matchQuery && matchBrand;
             });
@@ -1092,10 +1160,8 @@
 
             window.refreshAllViews();
 
-            // Push To Google Sheets Cloud DB
-            if (window.googleSheetUrl) {
-                window.pushDataToCloud();
-            }
+            // INSTANT REALTIME SYNC TO FIREBASE
+            window.syncToFirebase();
         };
 
         window.renderMasterSkuTable = function() {
@@ -1106,9 +1172,9 @@
             const brandQuery = document.getElementById('masterBrandFilter')?.value || '';
 
             const filtered = window.products.filter(p => {
-                const matchSearch = p.name.toLowerCase().includes(searchQuery) ||
-                                    p.barcode.toLowerCase().includes(searchQuery) ||
-                                    p.sku.toLowerCase().includes(searchQuery);
+                const matchSearch = (p.name && p.name.toLowerCase().includes(searchQuery)) ||
+                                    (p.barcode && String(p.barcode).toLowerCase().includes(searchQuery)) ||
+                                    (p.sku && String(p.sku).toLowerCase().includes(searchQuery));
                 const matchBrand = !brandQuery || p.brand === brandQuery;
                 return matchSearch && matchBrand;
             });
@@ -1210,9 +1276,8 @@
             window.refreshAllViews();
             window.showToast('Data SKU berhasil disimpan!', 'success');
 
-            if (window.googleSheetUrl) {
-                window.pushDataToCloud();
-            }
+            // FIREBASE SYNC
+            window.syncToFirebase();
         };
 
         window.deleteProduct = function(productId) {
@@ -1230,9 +1295,8 @@
                     window.refreshAllViews();
                     window.showToast('SKU berhasil dihapus!', 'info');
 
-                    if (window.googleSheetUrl) {
-                        window.pushDataToCloud();
-                    }
+                    // FIREBASE SYNC
+                    window.syncToFirebase();
                 }
             });
         };
@@ -1254,9 +1318,8 @@
                     window.refreshAllViews();
                     window.showToast('Seluruh Master List SKU telah berhasil dihapus!', 'warning');
 
-                    if (window.googleSheetUrl) {
-                        window.pushDataToCloud();
-                    }
+                    // FIREBASE SYNC
+                    window.syncToFirebase();
                 }
             });
         };
@@ -1301,7 +1364,6 @@
             lines.forEach(line => {
                 if (!line.trim()) return;
                 const parts = line.split(/,|\t/).map(s => s.trim());
-                // Skip header line if pasted
                 if (parts[0].toLowerCase() === 'barcode') return;
 
                 if (parts.length >= 6) {
@@ -1349,9 +1411,8 @@
             window.refreshAllViews();
             window.showToast(`${window.parsedBulkItems.length} SKU Baru Berhasil Di-import!`, 'success');
 
-            if (window.googleSheetUrl) {
-                window.pushDataToCloud();
-            }
+            // FIREBASE SYNC
+            window.syncToFirebase();
         };
 
         window.renderReportView = function() {
@@ -1428,108 +1489,45 @@
                     window.refreshAllViews();
                     window.showToast('Transaksi telah dihapus.', 'info');
 
-                    if (window.googleSheetUrl) {
-                        window.pushDataToCloud();
-                    }
+                    // FIREBASE SYNC
+                    window.syncToFirebase();
                 }
             });
         };
 
-        window.openGoogleSheetModal = function() {
-            document.getElementById('googleSheetUrlInput').value = window.googleSheetUrl;
-            document.getElementById('sheetModal').classList.remove('hidden');
-        };
-
-        window.closeGoogleSheetModal = function() {
-            document.getElementById('sheetModal').classList.add('hidden');
-        };
-
-        window.saveGoogleSheetUrl = function() {
-            const url = document.getElementById('googleSheetUrlInput').value.trim();
-            window.googleSheetUrl = url;
-            localStorage.setItem('bazaar_sheet_url', url);
-            window.updateGoogleSheetBadgeStatus();
-            window.closeGoogleSheetModal();
-            window.showToast('Google Sheet Webhook Berhasil Disimpan!', 'success');
-            
-            if (url) {
-                window.syncDataWithCloud(true);
+        window.openFirebaseModal = function() {
+            const input = document.getElementById('firebaseConfigInput');
+            if (input) {
+                input.value = localStorage.getItem('bazaar_firebase_config') || '';
             }
+            document.getElementById('firebaseModal').classList.remove('hidden');
         };
 
-        window.updateGoogleSheetBadgeStatus = function() {
-            const badge = document.getElementById('sheetStatusBadge');
-            const dot = document.getElementById('sheetStatusDot');
-            const text = document.getElementById('sheetStatusText');
-
-            if (!dot || !text) return;
-
-            if (window.googleSheetUrl) {
-                dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-                text.textContent = "Google Sheet Connected";
-            } else {
-                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-                text.textContent = "Connect Google Sheet";
-            }
+        window.closeFirebaseModal = function() {
+            document.getElementById('firebaseModal').classList.add('hidden');
         };
 
-        // Bi-Directional Cloud Synchronization with Google Sheets
-        window.syncDataWithCloud = async function(manualNotification = false) {
-            if (!window.googleSheetUrl) {
-                if (manualNotification) window.openGoogleSheetModal();
+        window.saveFirebaseConfig = function() {
+            const rawVal = document.getElementById('firebaseConfigInput').value.trim();
+            if (!rawVal) {
+                window.showToast('Masukkan kode Firebase Config terlebih dahulu!', 'warning');
                 return;
             }
 
-            if (manualNotification) window.showToast('Mengambil data terbaru dari Google Sheets...', 'info');
-
-            try {
-                const response = await fetch(window.googleSheetUrl);
-                if (response.ok) {
-                    const cloudData = await response.json();
-                    if (cloudData) {
-                        let updated = false;
-                        if (cloudData.products && Array.isArray(cloudData.products) && cloudData.products.length > 0) {
-                            window.products = cloudData.products;
-                            localStorage.setItem('bazaar_products', JSON.stringify(window.products));
-                            updated = true;
-                        }
-                        if (cloudData.transactions && Array.isArray(cloudData.transactions)) {
-                            window.transactions = cloudData.transactions;
-                            localStorage.setItem('bazaar_transactions', JSON.stringify(window.transactions));
-                            updated = true;
-                        }
-
-                        if (updated) {
-                            window.refreshAllViews();
-                            if (manualNotification) window.showToast('Data berhasil disinkronkan dari Google Sheets!', 'success');
-                        }
-                    }
-                }
-            } catch (err) {
-                console.warn('Sync read note:', err);
-                if (manualNotification) window.showToast('Koneksi live sync siap.', 'info');
-            }
+            localStorage.setItem('bazaar_firebase_config', rawVal);
+            window.closeFirebaseModal();
+            window.initFirebaseFromStorage();
+            
+            // Push local data to sync initially
+            setTimeout(() => {
+                window.syncToFirebase();
+                window.showToast('Firebase Berhasil Terhubung! Realtime Sync Aktif.', 'success');
+            }, 500);
         };
 
-        window.pushDataToCloud = async function() {
-            if (!window.googleSheetUrl) return;
-
-            const payload = {
-                action: "SYNC_ALL",
-                products: window.products,
-                transactions: window.transactions
-            };
-
-            try {
-                await fetch(window.googleSheetUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            } catch (err) {
-                console.error('Push Cloud Error:', err);
-            }
+        window.clearFirebaseConfig = function() {
+            localStorage.removeItem('bazaar_firebase_config');
+            location.reload();
         };
 
         window.exportCSV = function() {
@@ -1573,7 +1571,7 @@
                     { facingMode: "environment" },
                     { fps: 10, qrbox: { width: 250, height: 250 } },
                     (decodedText) => {
-                        const matched = window.products.find(p => p.barcode === decodedText || p.sku === decodedText);
+                        const matched = window.products.find(p => String(p.barcode) === decodedText || String(p.sku) === decodedText);
                         if (matched) {
                             window.addToCart(matched.id);
                             window.showToast(`Berhasil Scan: ${matched.name}`, 'success');
