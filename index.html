@@ -237,7 +237,10 @@
                         </h2>
                         <p class="text-xs text-slate-500">Kelola item, barcode acuan, brand, harga jual, dan persediaan stok bazaar.</p>
                     </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                        <button onclick="window.clearAllProducts()" class="flex-1 sm:flex-initial px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Hapus Semua SKU
+                        </button>
                         <button onclick="window.openBulkModal()" class="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition">
                             <i data-lucide="file-up" class="w-4 h-4"></i> Upload Bulk SKU (CSV / Excel)
                         </button>
@@ -369,6 +372,23 @@
         </div>
 
     </main>
+
+    <!-- MODAL: Custom Confirm Dialog -->
+    <div id="confirmModal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-slate-200 text-center">
+            <div id="confirmModalIconBg" class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+                <i id="confirmModalIcon" data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div class="space-y-1">
+                <h3 id="confirmModalTitle" class="font-bold text-base text-slate-900">Konfirmasi Hapus</h3>
+                <p id="confirmModalMessage" class="text-xs text-slate-500 leading-relaxed">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="window.closeConfirmModal()" class="flex-1 py-2 border border-slate-300 text-slate-700 rounded-xl font-semibold text-xs hover:bg-slate-50 transition">Batal</button>
+                <button id="confirmModalBtn" onclick="window.executeConfirmModal()" class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-xs shadow-md transition">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: Camera Barcode Scanner -->
     <div id="cameraModal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center p-4">
@@ -568,6 +588,7 @@
         window.selectedBrandFilter = '';
         window.activePaymentMethod = 'QRIS';
         window.html5QrcodeScanner = null;
+        window.confirmModalCallback = null;
 
         document.addEventListener("DOMContentLoaded", () => {
             if (window.lucide) {
@@ -617,6 +638,31 @@
             if (masterSearch) masterSearch.addEventListener('input', window.renderMasterSkuTable);
             if (masterBrand) masterBrand.addEventListener('change', window.renderMasterSkuTable);
         });
+
+        window.showConfirmModal = function({ title, message, btnText = 'Ya, Hapus', btnClass = 'bg-red-600 hover:bg-red-700', onConfirm }) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalMessage').textContent = message;
+            
+            const btn = document.getElementById('confirmModalBtn');
+            btn.textContent = btnText;
+            btn.className = `flex-1 py-2 text-white rounded-xl font-semibold text-xs shadow-md transition ${btnClass}`;
+            
+            window.confirmModalCallback = onConfirm;
+            document.getElementById('confirmModal').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        };
+
+        window.closeConfirmModal = function() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            window.confirmModalCallback = null;
+        };
+
+        window.executeConfirmModal = function() {
+            if (typeof window.confirmModalCallback === 'function') {
+                window.confirmModalCallback();
+            }
+            window.closeConfirmModal();
+        };
 
         window.switchTab = function(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -1145,13 +1191,45 @@
         };
 
         window.deleteProduct = function(productId) {
-            if (!confirm('Apakah kamu yakin ingin menghapus SKU barang ini?')) return;
-            window.products = window.products.filter(p => String(p.id) !== String(productId));
-            localStorage.setItem('bazaar_products', JSON.stringify(window.products));
-            window.populateBrandFilter();
-            window.renderMasterSkuTable();
-            window.renderProducts();
-            window.showToast('SKU berhasil dihapus!', 'info');
+            const prod = window.products.find(p => String(p.id) === String(productId));
+            const name = prod ? prod.name : 'barang ini';
+
+            window.showConfirmModal({
+                title: 'Hapus SKU Barang',
+                message: `Apakah Anda yakin ingin menghapus "${name}" dari Master List SKU?`,
+                btnText: 'Hapus SKU',
+                btnClass: 'bg-red-600 hover:bg-red-700',
+                onConfirm: () => {
+                    window.products = window.products.filter(p => String(p.id) !== String(productId));
+                    localStorage.setItem('bazaar_products', JSON.stringify(window.products));
+                    window.populateBrandFilter();
+                    window.renderMasterSkuTable();
+                    window.renderProducts();
+                    window.showToast('SKU berhasil dihapus!', 'info');
+                }
+            });
+        };
+
+        window.clearAllProducts = function() {
+            if (window.products.length === 0) {
+                window.showToast('Master List SKU sudah kosong!', 'warning');
+                return;
+            }
+
+            window.showConfirmModal({
+                title: 'Hapus Semua SKU Master',
+                message: `Apakah Anda yakin ingin MENGHAPUS SELURUH ${window.products.length} item SKU dari Master List? Tindakan ini tidak dapat dibatalkan.`,
+                btnText: 'Hapus Semua SKU',
+                btnClass: 'bg-red-600 hover:bg-red-700',
+                onConfirm: () => {
+                    window.products = [];
+                    localStorage.setItem('bazaar_products', JSON.stringify(window.products));
+                    window.populateBrandFilter();
+                    window.renderMasterSkuTable();
+                    window.renderProducts();
+                    window.showToast('Seluruh Master List SKU telah berhasil dihapus!', 'warning');
+                }
+            });
         };
 
         window.openBulkModal = function() {
@@ -1306,12 +1384,19 @@
         };
 
         window.deleteTransaction = function(txId) {
-            if (!confirm('Apakah kamu yakin ingin menghapus catatan transaksi ini?')) return;
-            window.transactions = window.transactions.filter(t => t.id !== txId);
-            localStorage.setItem('bazaar_transactions', JSON.stringify(window.transactions));
-            window.renderReportView();
-            window.populateDayFilter();
-            window.showToast('Transaksi telah dihapus.', 'info');
+            window.showConfirmModal({
+                title: 'Hapus Transaksi',
+                message: `Apakah Anda yakin ingin menghapus catatan transaksi ${txId}?`,
+                btnText: 'Hapus Transaksi',
+                btnClass: 'bg-red-600 hover:bg-red-700',
+                onConfirm: () => {
+                    window.transactions = window.transactions.filter(t => t.id !== txId);
+                    localStorage.setItem('bazaar_transactions', JSON.stringify(window.transactions));
+                    window.renderReportView();
+                    window.populateDayFilter();
+                    window.showToast('Transaksi telah dihapus.', 'info');
+                }
+            });
         };
 
         window.openGoogleSheetModal = function() {
@@ -1390,10 +1475,16 @@
         };
 
         window.confirmResetData = function() {
-            if (confirm('Apakah kamu yakin ingin mereset seluruh data lokal ke kondisi awal (demo)?')) {
-                localStorage.clear();
-                location.reload();
-            }
+            window.showConfirmModal({
+                title: 'Reset Data Aplikasi',
+                message: 'Apakah Anda yakin ingin mereset seluruh data lokal ke kondisi awal (demo)?',
+                btnText: 'Reset Data',
+                btnClass: 'bg-red-600 hover:bg-red-700',
+                onConfirm: () => {
+                    localStorage.clear();
+                    location.reload();
+                }
+            });
         };
 
         window.startCameraScan = function() {
