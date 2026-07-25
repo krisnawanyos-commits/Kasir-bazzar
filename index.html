@@ -458,11 +458,17 @@
             </div>
 
             <div class="space-y-3 text-xs">
-                <p class="text-slate-600">
-                    Format Kolom (Pisahkan dengan Koma / Tab Excel):<br>
-                    <code class="bg-slate-100 px-2 py-1 rounded text-blue-700 font-mono">Barcode, SKU, Brand, Subsidiary, Nama Barang, Harga, Stok</code>
-                </p>
-                <textarea id="bulkInputText" rows="6" placeholder="Contoh:&#10;8991001, SNK-01, Lays, PT Indofood, Snack Lays Potato Chips, 12000, 40&#10;8991002, DRK-01, Nescafe, PT Nestle, Kopi Cold Brew Botol, 25000, 30" class="w-full p-3 border border-slate-300 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500"></textarea>
+                <div class="flex items-center justify-between bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div class="space-y-0.5">
+                        <p class="font-semibold text-blue-900">Format Kolom Data SKU:</p>
+                        <code class="text-[11px] text-blue-800 font-mono">Barcode, SKU, Brand, Subsidiary, Nama Barang, Harga, Stok</code>
+                    </div>
+                    <button type="button" onclick="window.downloadSkuTemplate()" class="px-3 py-1.5 bg-white hover:bg-blue-100 text-blue-700 border border-blue-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Template CSV
+                    </button>
+                </div>
+
+                <textarea id="bulkInputText" rows="6" placeholder="Atau langsung copy-paste baris data dari Excel di sini:&#10;8991001, SNK-01, Lays, PT Indofood, Snack Lays Potato Chips, 12000, 40&#10;8991002, DRK-01, Nescafe, PT Nestle, Kopi Cold Brew Botol, 25000, 30" class="w-full p-3 border border-slate-300 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500"></textarea>
 
                 <div id="bulkPreviewContainer" class="hidden space-y-2">
                     <h4 class="font-semibold text-slate-700">Hasil Parsing (<span id="bulkPreviewCount">0</span> barang terdeteksi):</h4>
@@ -645,7 +651,6 @@
             }, 2500);
         };
 
-        // FIXED: Replaced non-existent .filterBoolean() with JS standard .filter(Boolean)
         window.populateBrandFilter = function() {
             const brands = [...new Set(window.products.map(p => p.brand))].filter(Boolean);
             const container = document.getElementById('brandFilterChips');
@@ -1158,6 +1163,24 @@
             document.getElementById('bulkPreviewContainer').classList.add('hidden');
         };
 
+        window.downloadSkuTemplate = function() {
+            const csvContent = "Barcode,SKU,Brand,Subsidiary,Nama Barang,Harga,Stok\n" +
+                               "8991001,SNK-01,Lays,PT Indofood Fritolay,Snack Lays Potato Chips 50g,12000,40\n" +
+                               "8991002,DRK-01,Nescafe,PT Nestle Indonesia,Kopi Cold Brew Botol 250ml,25000,30\n" +
+                               "8991003,MRC-01,LocknLock,PT LocknLock Housewares,Tumbler Stainless Office 500ml,85000,14";
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Template_Master_SKU_Bazaar.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            window.showToast('Template CSV berhasil diunduh!', 'success');
+        };
+
         window.parseAndPreviewBulkData = function() {
             const rawText = document.getElementById('bulkInputText').value.trim();
             if (!rawText) {
@@ -1171,6 +1194,9 @@
             lines.forEach(line => {
                 if (!line.trim()) return;
                 const parts = line.split(/,|\t/).map(s => s.trim());
+                // Skip header line if pasted
+                if (parts[0].toLowerCase() === 'barcode') return;
+
                 if (parts.length >= 6) {
                     items.push({
                         barcode: parts[0],
