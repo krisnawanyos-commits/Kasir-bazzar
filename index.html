@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kasir & Rekap Bazaar Kantor - Multi Cashier Realtime Sync</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS Excel Library -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Firebase Compat Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -192,6 +196,9 @@
                     <p class="text-xs text-slate-500">Kelola database stok, barcode, harga, subsidiary, dan catatan promo</p>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button onclick="window.openModalDeleteAllSKU()" class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i> Hapus Semua SKU
+                    </button>
                     <button onclick="window.openModalBulkExcel()" class="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-2">
                         <i class="fa-solid fa-file-excel"></i> Import Excel / CSV
                     </button>
@@ -314,21 +321,21 @@
             </div>
 
             <!-- Drag and Drop / File Input -->
-            <div class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-6 text-center bg-slate-50/50 cursor-pointer transition" onclick="document.getElementById('excelFileInput').click()">
-                <i class="fa-solid fa-cloud-arrow-up text-3xl text-indigo-500 mb-2"></i>
-                <p class="text-xs font-bold text-slate-700">Pilih File Excel (.xlsx / .csv) atau Seret Ke Sini</p>
-                <p class="text-[11px] text-slate-400 mt-1">Sistem otomatis memproses sheet pertama file Anda</p>
-                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" onchange="window.handleExcelFileUpload(event)" class="hidden">
+    <!-- MODAL: Delete All SKU Confirmation -->
+    <div id="modalDeleteAllSKU" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
+                <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
-
-            <div class="relative">
-                <span class="text-[11px] font-bold text-slate-400 uppercase">Atau Copy-Paste Langsung Sel Excel di Sini:</span>
-                <textarea id="bulkPasteText" rows="4" placeholder="8991001, SKU-01, Lays, PT Indofood, Lays Potato Chips, 12000, 50, Buy 1 Get 1" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-indigo-500"></textarea>
+            <div>
+                <h3 class="font-bold text-base text-slate-900">Hapus Seluruh SKU?</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                    Apakah Anda yakin ingin menghapus <span id="deleteAllCountText" class="font-bold text-rose-600">0</span> SKU dari database? Tindakan ini tidak dapat dibatalkan dan akan tersinkronisasi ke seluruh kasir.
+                </p>
             </div>
-
-            <div class="flex justify-end gap-2">
-                <button onclick="window.closeModalBulkExcel()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Batal</button>
-                <button onclick="window.processBulkPaste()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm">Proses Data SKU</button>
+            <div class="flex items-center justify-center gap-2 pt-2">
+                <button onclick="window.closeModalDeleteAllSKU()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Batal</button>
+                <button onclick="window.confirmDeleteAllSKU()" class="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm">Ya, Hapus Semua</button>
             </div>
         </div>
     </div>
@@ -392,10 +399,11 @@
     <div id="modalPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
             <div class="flex items-center justify-between">
-                <h3 class="font-bold text-base text-slate-900">Buat Program Promo Baru</h3>
+                <h3 id="modalPromoTitle" class="font-bold text-base text-slate-900">Buat Program Promo Baru</h3>
                 <button onclick="window.closeModalPromo()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <form id="formPromo" onsubmit="window.savePromoProgram(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="promoEditId">
                 <div>
                     <label class="font-bold text-slate-700">Nama Program Promo *</label>
                     <input type="text" id="promoName" required placeholder="Contoh: B1G1 Colgate / Paket Bundling 50k" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
@@ -1014,12 +1022,34 @@
         };
 
         window.deleteSKU = function(id) {
-            if (!confirm('Apakah Anda yakin ingin menghapus SKU ini?')) return;
             window.products = window.products.filter(p => String(p.id) !== String(id));
             if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
             window.renderCatalog();
             window.renderMasterTable();
+            window.updateBadgeCounts();
             window.showToast('SKU berhasil dihapus!', 'warning');
+        };
+
+        window.openModalDeleteAllSKU = function() {
+            const countEl = document.getElementById('deleteAllCountText');
+            if (countEl) countEl.innerText = (window.products || []).length.toString();
+            document.getElementById('modalDeleteAllSKU').classList.remove('hidden');
+        };
+
+        window.closeModalDeleteAllSKU = function() {
+            document.getElementById('modalDeleteAllSKU').classList.add('hidden');
+        };
+
+        window.confirmDeleteAllSKU = function() {
+            window.products = [];
+            if (window.firebaseDb) {
+                window.firebaseDb.ref('products').set([]);
+            }
+            window.closeModalDeleteAllSKU();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.updateBadgeCounts();
+            window.showToast('Seluruh data SKU berhasil dihapus!', 'warning');
         };
 
         window.renderPromoList = function() {
@@ -1036,7 +1066,10 @@
                             <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase ${pr.type === 'BOGO' ? 'bg-purple-100 text-purple-700' : pr.type === 'B2G1' ? 'bg-indigo-100 text-indigo-700' : pr.type === 'PAKET_PROMO' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
                                 ${pr.badge || pr.type}
                             </span>
-                            <button onclick="window.deletePromo('${pr.id}')" class="text-slate-400 hover:text-rose-600 text-xs transition"><i class="fa-solid fa-trash-can"></i></button>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="window.editPromo('${pr.id}')" class="text-slate-400 hover:text-indigo-600 text-xs transition p-1" title="Edit Promo"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="window.deletePromo('${pr.id}')" class="text-slate-400 hover:text-rose-600 text-xs transition p-1" title="Hapus Promo"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
                         </div>
                         <h3 class="font-bold text-sm text-slate-900">${pr.name}</h3>
                         <div class="text-xs text-slate-500 space-y-1">
@@ -1053,34 +1086,46 @@
 
         window.savePromoProgram = function(e) {
             e.preventDefault();
+            const editId = document.getElementById('promoEditId').value;
             const name = document.getElementById('promoName').value.trim();
             const type = document.getElementById('promoTypeSelect').value;
             const badge = document.getElementById('promoBadgeTag').value.trim();
             const checkboxes = document.querySelectorAll('input[name="promoSKUs"]:checked');
             const selectedSKUs = Array.from(checkboxes).map(cb => cb.value);
 
-            const newPromo = {
-                id: 'PROMO-' + Date.now(),
-                name: name,
-                type: type,
-                badge: badge,
-                skus: selectedSKUs
-            };
+            if (editId) {
+                const idx = window.promos.findIndex(p => String(p.id) === String(editId));
+                if (idx > -1) {
+                    window.promos[idx] = { ...window.promos[idx], name, type, badge, skus: selectedSKUs };
+                }
+            } else {
+                const newPromo = {
+                    id: 'PROMO-' + Date.now(),
+                    name: name,
+                    type: type,
+                    badge: badge,
+                    skus: selectedSKUs
+                };
+                window.promos.push(newPromo);
+            }
 
-            window.promos.push(newPromo);
             if (window.firebaseDb) window.firebaseDb.ref('promos').set(window.promos);
             window.closeModalPromo();
             window.renderPromoList();
             window.renderCatalog();
-            window.showToast('Program promo berhasil dibuat!', 'info');
+            window.showToast('Program promo berhasil disimpan!', 'info');
+        };
+
+        window.editPromo = function(id) {
+            window.openModalPromo(id);
         };
 
         window.deletePromo = function(id) {
-            if (!confirm('Hapus program promo ini?')) return;
             window.promos = window.promos.filter(p => String(p.id) !== String(id));
             if (window.firebaseDb) window.firebaseDb.ref('promos').set(window.promos);
             window.renderPromoList();
             window.renderCatalog();
+            window.updateBadgeCounts();
             window.showToast('Program promo berhasil dihapus!', 'warning');
         };
 
@@ -1270,32 +1315,51 @@
                 el.classList.add('text-slate-400');
             });
 
-            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            const targetView = document.getElementById(`view-${tabName}`);
+            if (targetView) targetView.classList.remove('hidden');
+
             const activeBtn = document.getElementById(`nav-${tabName}`);
-            activeBtn.classList.add('bg-indigo-600', 'text-white');
-            activeBtn.classList.remove('text-slate-400');
+            if (activeBtn) {
+                activeBtn.classList.add('bg-indigo-600', 'text-white');
+                activeBtn.classList.remove('text-slate-400');
+            }
+        };
+
+        window.openModalAddSKU = () => document.getElementById('modalAddSKU').classList.remove('hidden');
+        window.closeModalAddSKU = () => {
+            document.getElementById('modalAddSKU').classList.add('hidden');
+            document.getElementById('formAddSKU').reset();
+            document.getElementById('skuEditId').value = '';
         };
 
         window.openModalBulkExcel = () => document.getElementById('modalBulkExcel').classList.remove('hidden');
         window.closeModalBulkExcel = () => document.getElementById('modalBulkExcel').classList.add('hidden');
-        
-        window.openModalAddSKU = () => {
-            document.getElementById('modalSKUTitle').innerText = 'Tambah SKU Baru';
-            document.getElementById('skuEditId').value = '';
-            document.getElementById('formAddSKU').reset();
-            document.getElementById('modalAddSKU').classList.remove('hidden');
-        };
-        window.closeModalAddSKU = () => document.getElementById('modalAddSKU').classList.add('hidden');
-        
-        window.openModalPromo = () => {
+
+        window.openModalPromo = function(editId = null) {
+            document.getElementById('promoEditId').value = editId || '';
+            const titleEl = document.getElementById('modalPromoTitle');
+            if (titleEl) titleEl.innerText = editId ? 'Edit Program Promo' : 'Buat Program Promo Baru';
+            
+            const promo = editId ? window.promos.find(p => String(p.id) === String(editId)) : null;
+
+            if (promo) {
+                document.getElementById('promoName').value = promo.name || '';
+                document.getElementById('promoTypeSelect').value = promo.type || 'BOGO';
+                document.getElementById('promoBadgeTag').value = promo.badge || '';
+            } else {
+                document.getElementById('formPromo').reset();
+                document.getElementById('promoEditId').value = '';
+            }
+
             const container = document.getElementById('promoSKUCheckboxList');
             if (container) {
                 if (!window.products || window.products.length === 0) {
                     container.innerHTML = `<p class="text-slate-400 text-xs">Belum ada SKU. Tambahkan SKU di Master List terlebih dahulu.</p>`;
                 } else {
+                    const selectedSKUs = promo && promo.skus ? promo.skus : [];
                     container.innerHTML = window.products.map(p => `
                         <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-                            <input type="checkbox" name="promoSKUs" value="${p.sku}" class="rounded text-indigo-600 focus:ring-indigo-500">
+                            <input type="checkbox" name="promoSKUs" value="${p.sku}" ${selectedSKUs.includes(p.sku) ? 'checked' : ''} class="rounded text-indigo-600 focus:ring-indigo-500">
                             <span>${p.name} (${p.sku}) - <span class="text-slate-400">${p.brand}</span></span>
                         </label>
                     `).join('');
