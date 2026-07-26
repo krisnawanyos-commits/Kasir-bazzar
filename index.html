@@ -36,6 +36,42 @@
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Custom Scrollbar for Cart Items */
+        #cartItemsContainer::-webkit-scrollbar {
+            width: 6px;
+        }
+        #cartItemsContainer::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 9999px;
+        }
+        #cartItemsContainer::-webkit-scrollbar-track {
+            background-color: #f8fafc;
+        }
+
+        /* Print Receipt Thermal Styling */
+        @media print {
+            body * {
+                visibility: hidden !important;
+            }
+            #printableReceiptArea, #printableReceiptArea * {
+                visibility: visible !important;
+            }
+            #printableReceiptArea {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 80mm;
+                padding: 8px;
+                margin: 0;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 11px;
+                line-height: 1.3;
+                color: #000 !important;
+                background: #fff !important;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col antialiased bg-slate-100">
@@ -63,7 +99,7 @@
                         <span class="text-[9px] font-bold text-sky-400 tracking-wider uppercase">Bazaar Cashier</span>
                     </div>
                     <!-- Reset Logo Button -->
-                    <button id="resetLogoBtn" onclick="window.resetLogo()" class="hidden absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 hover:bg-rose-600 text-white rounded-full items-center justify-center text-[10px] shadow border border-white transition" title="Reset Logo Default">
+                    <button id="resetLogoBtn" onclick="window.resetLogo()" class="hidden absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] shadow border border-white transition" title="Reset Logo Default">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -175,8 +211,13 @@
                     </div>
 
                     <!-- Cart Item List -->
-                    <div id="cartItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3 min-h-[220px]">
+                    <div id="cartItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3 min-h-[220px] max-h-[360px] sm:max-h-[420px]">
                         <!-- Cart items rendered dynamically -->
+                    </div>
+
+                    <!-- Progress Bar Minimal Belanja (Free Bonus Gimmick) -->
+                    <div id="cartThresholdProgressContainer" class="px-4 py-3 bg-amber-50/90 border-t border-b border-amber-200/80 space-y-1.5 text-xs">
+                        <!-- Dynamic Threshold Progress Bar rendered here -->
                     </div>
 
                     <!-- Cart Footer & Cashless Options -->
@@ -196,9 +237,16 @@
                             </div>
                         </div>
 
-                        <!-- Customer Info Field -->
-                        <div>
-                            <input type="text" id="cartCustomerName" placeholder="Nama Pembeli / Dept / Catatan (Opsional)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <!-- Customer Info & Manual Discount Fields -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Nama Pembeli / Dept:</label>
+                                <input type="text" id="cartCustomerName" placeholder="Catatan / Nama" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Diskon Manual (Rp):</label>
+                                <input type="number" id="cartManualDiscount" min="0" value="0" oninput="window.renderCart()" placeholder="0" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-rose-600 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
                         </div>
 
                         <!-- Cashless Payment Buttons Only -->
@@ -236,6 +284,25 @@
             <div id="promoProgramList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <!-- Dynamic Promo Cards -->
             </div>
+
+            <!-- SECTION: Program Minimal Belanja (Threshold Gimmick Rewards) -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-gift text-amber-500"></i> Program Syarat Minimal Belanja (Free Gimmick)
+                        </h3>
+                        <p class="text-xs text-slate-500">Atur batas nominal belanja untuk klaim item bonus/gimmick gratis bagi pembeli</p>
+                    </div>
+                    <button onclick="window.openModalThresholdPromo()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus"></i> Tambah Program Minimal Belanja
+                    </button>
+                </div>
+
+                <div id="thresholdPromoList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- Dynamic Threshold Cards -->
+                </div>
+            </div>
         </section>
 
         <!-- TAB 3: MASTER SKU LIST -->
@@ -245,26 +312,28 @@
                     <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
                         <i class="fa-solid fa-boxes-stacked text-amber-500"></i> Master List SKU & Barang Bazaar
                     </h2>
-                    <p class="text-xs text-slate-500">Kelola database stok, barcode, harga, subsidiary, dan catatan promo per produk</p>
+                    <p class="text-xs text-slate-500">Kelola database stok, barcode, harga normal, brand, subsidiary, dan catatan promo</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="window.openModalDeleteAllSKU()" class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-2">
+                    <button onclick="window.openModalDeleteAllSKU()" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5">
                         <i class="fa-solid fa-trash-can"></i> Hapus Semua SKU
                     </button>
-                    <button onclick="window.openModalBulkExcel()" class="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-2">
+                    <button onclick="window.openModalBulkExcel()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
                         <i class="fa-solid fa-file-excel"></i> Import Excel / CSV
                     </button>
-                    <button onclick="window.openModalAddSKU()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-2">
+                    <button onclick="window.openModalAddSKU()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
                         <i class="fa-solid fa-plus"></i> Tambah SKU Baru
                     </button>
                 </div>
             </div>
 
-            <!-- Master Table -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-4">
-                    <input type="text" id="masterSearch" oninput="window.renderMasterTable()" placeholder="Cari berdasarkan SKU, Barcode, Nama, Brand, Subsidiary..." class="w-full max-w-md px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <!-- Master Table Search -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden space-y-4 p-5">
+                <div class="relative max-w-md">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="masterSearch" oninput="window.renderMasterTable()" placeholder="Cari barcode, SKU, nama barang, atau brand..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
                 </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
@@ -273,8 +342,8 @@
                                 <th class="p-3.5">Nama Barang</th>
                                 <th class="p-3.5">Brand & Subsidiary</th>
                                 <th class="p-3.5">Harga Normal</th>
-                                <th class="p-3.5">Stok</th>
-                                <th class="p-3.5">Status / Label Promo</th>
+                                <th class="p-3.5">Sisa Stok</th>
+                                <th class="p-3.5">Promo Tag</th>
                                 <th class="p-3.5 text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -326,6 +395,7 @@
                                 <th class="p-3">Items Purchased</th>
                                 <th class="p-3">Pembeli</th>
                                 <th class="p-3 text-right">Total Bayar</th>
+                                <th class="p-3 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="transactionLogBody" class="divide-y divide-slate-100">
@@ -336,6 +406,89 @@
             </div>
         </section>
     </main>
+
+    <!-- MODAL: Claim Free Gimmick Picker -->
+    <div id="modalClaimGimmick" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl p-6 space-y-4 animate-fade-in relative">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-gift text-emerald-600"></i> Pilih & Klaim Item Free Gimmick Gratis
+                </h3>
+                <button onclick="window.closeClaimGimmickModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <p class="text-xs text-slate-500">Pilih barang di bawah untuk ditambahkan langsung ke keranjang sebagai <b>Bonus Gratis (Rp 0)</b>.</p>
+            
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="gimmickSearchInput" oninput="window.renderGimmickPickerList()" placeholder="Cari nama barang atau brand gimmick..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+
+            <div id="gimmickPickerContainer" class="max-h-72 overflow-y-auto space-y-2 pr-1">
+                <!-- Dynamic SKU Gimmick Selection Rows -->
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="window.closeClaimGimmickModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Selesai / Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Receipt / Struk Transaksi Success -->
+    <div id="modalReceipt" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative">
+            <!-- Close (X) Icon Button Top Right -->
+            <button onclick="window.closeReceiptModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center text-sm font-bold shadow-sm" title="Tutup Dialog">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <h3 class="font-extrabold text-lg text-slate-900">Transaksi Berhasil!</h3>
+                <p class="text-xs text-slate-500">Data telah tersimpan di Cloud Database</p>
+            </div>
+
+            <!-- Receipt Card Preview Area -->
+            <div id="receiptPreviewCard" class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-xs space-y-3 font-mono">
+                <!-- Receipt dynamically rendered here -->
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="window.printReceipt()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> Cetak Struk
+                </button>
+                <button onclick="window.closeReceiptModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                    Simpan & Rekap
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Printable Area for Thermal Printers -->
+    <div id="printableReceiptArea" class="hidden">
+        <!-- Thermal Receipt Content -->
+    </div>
+
+    <!-- MODAL: Delete Single Transaction Confirmation -->
+    <div id="modalDeleteTx" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-base text-slate-900">Hapus / Void Transaksi Ini?</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                    Transaksi <span id="deleteTxIdText" class="font-bold text-slate-800">TRX-XXX</span> akan dihapus dari laporan dan <span class="font-bold text-emerald-600">stok barang akan dikembalikan</span> ke Master List.
+                </p>
+            </div>
+            <div class="flex items-center justify-center gap-2 pt-2">
+                <button onclick="window.closeModalDeleteTx()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Batal</button>
+                <button onclick="window.confirmDeleteTransaction()" class="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm">Ya, Hapus Transaksi</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: Config Firebase -->
     <div id="modalFirebase" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -476,32 +629,67 @@
                 <input type="hidden" id="promoEditId">
                 <div>
                     <label class="font-bold text-slate-700">Nama Program Promo *</label>
-                    <input type="text" id="promoName" required placeholder="Contoh: B1G1 Colgate / Paket Bundling 50k" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <input type="text" id="promoName" required placeholder="Contoh: Promo B1G1 Boncept Retinol" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="font-bold text-slate-700">Jenis Mekanisme Promo *</label>
-                        <select id="promoTypeSelect" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="BOGO">Buy 1 Get 1 / Buy 2 Get 2 (BOGO)</option>
-                            <option value="B2G1">Buy 2 Get 1 Free (B2G1)</option>
-                            <option value="PAKET_PROMO">Harga Paket / Bundling Khusus</option>
+                        <label class="font-bold text-slate-700">Mekanisme Promo *</label>
+                        <select id="promoTypeSelect" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+                            <option value="BOGO">Buy 1 Get 1 / B2G2 (Free Pairs)</option>
+                            <option value="B2G1">Buy 2 Get 1 Free</option>
+                            <option value="PAKET_PROMO">Set Harga Paket Bundling</option>
                             <option value="GIMMICK">Free Bonus / Gimmick (Rp 0)</option>
                         </select>
                     </div>
                     <div>
                         <label class="font-bold text-slate-700">Badge Tag Promo *</label>
-                        <input type="text" id="promoBadgeTag" required placeholder="Contoh: B1G1, PAKET 50K" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" id="promoBadgeTag" required placeholder="Contoh: BUY 1 GET 1 77,800" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
                     </div>
                 </div>
+
                 <div>
-                    <label class="font-bold text-slate-700">Pilih SKU Barang yang Ikut Promo ini:</label>
-                    <div id="promoSKUCheckboxList" class="mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-40 overflow-y-auto space-y-2">
-                        <!-- Dynamic SKU Checkboxes -->
+                    <label class="font-bold text-slate-700 block mb-1">Pilih SKU Barang yang Ikut Promo:</label>
+                    <div id="promoSKUCheckboxList" class="max-h-40 overflow-y-auto p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                        <!-- Dynamic checkboxes for SKUs -->
                     </div>
                 </div>
+
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="window.closeModalPromo()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm">Simpan Program Promo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Add / Edit Threshold Promo Program -->
+    <div id="modalThresholdPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 id="modalThresholdTitle" class="font-bold text-base text-slate-900">Tambah Program Minimal Belanja</h3>
+                <button onclick="window.closeModalThresholdPromo()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formThresholdPromo" onsubmit="window.saveThresholdPromo(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="thresholdEditId">
+                <div>
+                    <label class="font-bold text-slate-700">Nama Syarat Program *</label>
+                    <input type="text" id="thresholdName" required placeholder="Contoh: Belanja Min 500rb Dapat 1 Gimmick" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700">Minimal Nominal Belanja (Rp) *</label>
+                    <input type="number" id="thresholdMinAmount" required min="1000" step="1000" placeholder="500000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700">Jumlah Kuota Free Gimmick / Bonus *</label>
+                    <input type="number" id="thresholdRewardCount" required min="1" placeholder="1" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700">Catatan Label / Syarat *</label>
+                    <input type="text" id="thresholdLabel" required placeholder="Contoh: Klaim 1 Pcs Free Bonus" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeModalThresholdPromo()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">Simpan Program</button>
                 </div>
             </form>
         </div>
@@ -540,10 +728,16 @@
         window.products = [];
         window.transactions = [];
         window.promos = [];
+        window.thresholdPromos = [
+            { id: 'THRES-500K', name: 'Min. Belanja 500 Ribu', minAmount: 500000, rewardCount: 1, label: 'Klaim 1 Pcs Free Bonus' },
+            { id: 'THRES-1M', name: 'Min. Belanja 1 Juta', minAmount: 1000000, rewardCount: 2, label: 'Klaim 2 Pcs Free Bonus' }
+        ];
         window.cart = [];
         window.selectedBrandFilter = 'ALL';
         window.firebaseDb = null;
         window.scannerStream = null;
+        window.currentReceiptTx = null;
+        window.pendingDeleteTxId = null;
 
         window.initFirebase = function(configObj) {
             try {
@@ -577,6 +771,16 @@
                     window.updateBadgeCounts();
                 });
 
+                // Realtime Listener for Threshold Spend Promos
+                window.firebaseDb.ref('thresholdPromos').on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        window.thresholdPromos = Array.isArray(data) ? data : Object.values(data);
+                    }
+                    window.renderThresholdPromoList();
+                    window.renderCart();
+                });
+
                 // Realtime Listener for Custom Logo
                 window.firebaseDb.ref('customLogo').on('value', (snapshot) => {
                     const logoData = snapshot.val();
@@ -608,7 +812,7 @@
             setTimeout(() => toast.remove(), 3200);
         };
 
-        window.addToCart = function(productId) {
+        window.addToCart = function(productId, asGimmick = false) {
             const product = window.products.find(p => String(p.id) === String(productId));
             if (!product) return;
 
@@ -617,7 +821,12 @@
                 return;
             }
 
-            const existingIndex = window.cart.findIndex(i => String(i.id) === String(productId));
+            const existingIndex = window.cart.findIndex(i => String(i.id) === String(productId) && i.isGimmick === asGimmick);
+            
+            // Check linked promos for this product
+            const linkedPromo = window.promos.find(pr => pr.skus && pr.skus.includes(product.sku));
+            const promoType = asGimmick ? 'GIMMICK' : (linkedPromo ? linkedPromo.type : (product.promoTag ? 'TAG' : ''));
+
             if (existingIndex > -1) {
                 if (window.cart[existingIndex].qty + 1 > product.stock) {
                     window.showToast(`Stok tersisa hanya ${product.stock} pcs!`, 'warning');
@@ -626,9 +835,6 @@
                 window.cart[existingIndex].qty += 1;
                 window.applyAutoPromoLogic(existingIndex);
             } else {
-                const linkedPromo = window.promos.find(pr => pr.skus && pr.skus.includes(product.sku));
-                const promoType = linkedPromo ? linkedPromo.type : '';
-                
                 window.cart.push({
                     id: product.id,
                     sku: product.sku,
@@ -641,10 +847,32 @@
                     promoId: linkedPromo ? linkedPromo.id : null,
                     customBundlePrice: (parseFloat(product.price) || 0) * 2,
                     customBundleQty: 2,
-                    discount: 0,
-                    isGimmick: false
+                    discount: asGimmick ? (parseFloat(product.price) || 0) : 0,
+                    isGimmick: asGimmick,
+                    hasPromoAssigned: !!(linkedPromo || product.promoTag || asGimmick)
                 });
                 window.applyAutoPromoLogic(window.cart.length - 1);
+            }
+
+            window.renderCart();
+        };
+
+        window.setCartQtyDirect = function(index, newQtyVal) {
+            const item = window.cart[index];
+            if (!item) return;
+
+            const product = window.products.find(p => String(p.id) === String(item.id));
+            let parsedQty = parseInt(newQtyVal) || 1;
+
+            if (parsedQty <= 0) {
+                window.cart.splice(index, 1);
+            } else {
+                if (product && parsedQty > product.stock) {
+                    window.showToast(`Stok tersisa hanya ${product.stock} pcs!`, 'warning');
+                    parsedQty = product.stock;
+                }
+                item.qty = parsedQty;
+                window.applyAutoPromoLogic(index);
             }
 
             window.renderCart();
@@ -702,6 +930,11 @@
         window.applyPaketPromo = function(index) {
             const item = window.cart[index];
             if (!item) return;
+
+            if (!item.hasPromoAssigned) {
+                window.showToast('Produk ini tidak terdaftar dalam program promo!', 'warning');
+                return;
+            }
 
             if (item.promoType === 'PAKET_PROMO') {
                 item.promoType = '';
@@ -767,6 +1000,11 @@
             const item = window.cart[index];
             if (!item) return;
 
+            if (!item.hasPromoAssigned) {
+                window.showToast('Produk ini tidak terdaftar dalam program promo!', 'warning');
+                return;
+            }
+
             if (item.promoType === 'BOGO') {
                 item.promoType = '';
                 item.discount = 0;
@@ -789,6 +1027,11 @@
             const item = window.cart[index];
             if (!item) return;
 
+            if (!item.hasPromoAssigned) {
+                window.showToast('Produk ini tidak terdaftar dalam program promo!', 'warning');
+                return;
+            }
+
             item.isGimmick = !item.isGimmick;
             if (item.isGimmick) item.promoType = 'GIMMICK';
             else item.promoType = '';
@@ -797,9 +1040,49 @@
             window.renderCart();
         };
 
+        window.openClaimGimmickModal = function() {
+            window.renderGimmickPickerList();
+            document.getElementById('modalClaimGimmick').classList.remove('hidden');
+        };
+
+        window.closeClaimGimmickModal = function() {
+            document.getElementById('modalClaimGimmick').classList.add('hidden');
+        };
+
+        window.renderGimmickPickerList = function() {
+            const container = document.getElementById('gimmickPickerContainer');
+            if (!container) return;
+
+            const searchVal = (document.getElementById('gimmickSearchInput')?.value || '').toLowerCase();
+            const filteredProds = window.products.filter(p => 
+                p.name.toLowerCase().includes(searchVal) || 
+                p.brand.toLowerCase().includes(searchVal) ||
+                p.sku.toLowerCase().includes(searchVal)
+            );
+
+            if (filteredProds.length === 0) {
+                container.innerHTML = `<div class="py-8 text-center text-slate-400 text-xs">Tidak ada produk ditemukan.</div>`;
+                return;
+            }
+
+            container.innerHTML = filteredProds.map(p => `
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
+                    <div>
+                        <h4 class="font-bold text-xs text-slate-900">${p.name}</h4>
+                        <p class="text-[10px] text-slate-500">${p.brand} (${p.subsidiary}) • Stok: <b>${p.stock} pcs</b></p>
+                    </div>
+                    <button onclick="window.addToCart('${p.id}', true); window.showToast('Item Gimmick Gratis Ditambahkan!', 'info');" ${p.stock <= 0 ? 'disabled' : ''} class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0">
+                        <i class="fa-solid fa-plus"></i> Klaim Gratis
+                    </button>
+                </div>
+            `).join('');
+        };
+
         window.renderCart = function() {
             const container = document.getElementById('cartItemsContainer');
             if (!container) return;
+
+            const manualDiscInput = parseFloat(document.getElementById('cartManualDiscount')?.value) || 0;
 
             if (window.cart.length === 0) {
                 container.innerHTML = `
@@ -812,6 +1095,7 @@
                 document.getElementById('cartDiscountText').innerText = '- Rp 0';
                 document.getElementById('cartGrandTotalText').innerText = 'Rp 0';
                 document.getElementById('cartCountBadge').innerText = '0';
+                window.renderSpendThresholdProgress(0);
                 return;
             }
 
@@ -828,6 +1112,8 @@
                 subtotalNormal += itemSubtotal;
                 totalDiscount += itemDiscount;
 
+                const isPromoAllowed = item.hasPromoAssigned;
+
                 return `
                     <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2">
                         <div class="flex items-start justify-between gap-2">
@@ -838,18 +1124,24 @@
                             <button onclick="window.updateCartQty(${index}, -${item.qty})" class="text-slate-400 hover:text-rose-500 text-xs"><i class="fa-solid fa-xmark"></i></button>
                         </div>
 
-                        <!-- Promo Action Bar -->
-                        <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px]">
-                            <button onclick="window.applyBogoPromo(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.promoType === 'BOGO' ? 'bg-purple-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
-                                🔥 B1G1 / B2G2
-                            </button>
-                            <button onclick="window.applyPaketPromo(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.promoType === 'PAKET_PROMO' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
-                                🏷️ Set Harga Paket
-                            </button>
-                            <button onclick="window.toggleItemGimmickStatus(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.isGimmick ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
-                                🎁 Free Bonus
-                            </button>
-                        </div>
+                        <!-- Promo Action Bar (Disabled if non-promo product) -->
+                        ${isPromoAllowed ? `
+                            <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px]">
+                                <button onclick="window.applyBogoPromo(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.promoType === 'BOGO' ? 'bg-purple-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
+                                    🔥 B1G1 / B2G2
+                                </button>
+                                <button onclick="window.applyPaketPromo(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.promoType === 'PAKET_PROMO' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
+                                    🏷️ Set Harga Paket
+                                </button>
+                                <button onclick="window.toggleItemGimmickStatus(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.isGimmick ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
+                                    🎁 Free Bonus
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="text-[10px] text-slate-400 font-semibold bg-slate-100 px-2 py-1 rounded-md border border-slate-200 flex items-center gap-1">
+                                <i class="fa-solid fa-lock text-[9px]"></i> Harga Normal (Tanpa Promo)
+                            </div>
+                        `}
 
                         <!-- Package Config Panel -->
                         ${item.promoType === 'PAKET_PROMO' ? `
@@ -874,10 +1166,13 @@
 
                         <!-- Standard Item Controls -->
                         <div class="flex items-center justify-between pt-1 border-t border-slate-200/60">
-                            <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                                <button onclick="window.updateCartQty(${index}, -1)" class="w-5 h-5 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-200">-</button>
-                                <span class="font-bold text-xs px-2 text-slate-800">${item.qty} pcs</span>
-                                <button onclick="window.updateCartQty(${index}, 1)" class="w-5 h-5 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-200">+</button>
+                            <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm">
+                                <button onclick="window.updateCartQty(${index}, -1)" class="w-6 h-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-200 active:bg-slate-300 transition">-</button>
+                                <div class="flex items-center gap-1 px-1">
+                                    <input type="number" min="1" value="${item.qty}" onchange="window.setCartQtyDirect(${index}, this.value)" class="w-12 text-center font-bold text-xs bg-slate-50 border border-slate-300 rounded py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900">
+                                    <span class="text-[11px] font-semibold text-slate-500">pcs</span>
+                                </div>
+                                <button onclick="window.updateCartQty(${index}, 1)" class="w-6 h-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-200 active:bg-slate-300 transition">+</button>
                             </div>
                             <div class="text-right">
                                 ${itemDiscount > 0 ? `<span class="text-[10px] text-slate-400 line-through block">Rp ${itemSubtotal.toLocaleString('id-ID')}</span>` : ''}
@@ -888,15 +1183,174 @@
                 `;
             }).join('');
 
-            const grandTotal = Math.max(0, subtotalNormal - totalDiscount);
+            const grandTotalDiscount = totalDiscount + manualDiscInput;
+            const grandTotal = Math.max(0, subtotalNormal - grandTotalDiscount);
+
             document.getElementById('cartSubtotalText').innerText = `Rp ${subtotalNormal.toLocaleString('id-ID')}`;
-            document.getElementById('cartDiscountText').innerText = `- Rp ${totalDiscount.toLocaleString('id-ID')}`;
+            document.getElementById('cartDiscountText').innerText = `- Rp ${grandTotalDiscount.toLocaleString('id-ID')}`;
             document.getElementById('cartGrandTotalText').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
             document.getElementById('cartCountBadge').innerText = totalQty.toString();
+
+            // Render Minimum Spend Progress Bar
+            window.renderSpendThresholdProgress(grandTotal);
+        };
+
+        window.renderSpendThresholdProgress = function(grandTotal) {
+            const container = document.getElementById('cartThresholdProgressContainer');
+            if (!container) return;
+
+            const sortedThresholds = [...(window.thresholdPromos || [])].sort((a, b) => a.minAmount - b.minAmount);
+            if (sortedThresholds.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let unlockedTier = null;
+            let nextTargetTier = null;
+
+            for (let i = 0; i < sortedThresholds.length; i++) {
+                if (grandTotal >= sortedThresholds[i].minAmount) {
+                    unlockedTier = sortedThresholds[i];
+                } else {
+                    nextTargetTier = sortedThresholds[i];
+                    break;
+                }
+            }
+
+            let progressPercent = 0;
+            let statusText = '';
+
+            if (!unlockedTier && nextTargetTier) {
+                progressPercent = Math.min(100, Math.floor((grandTotal / nextTargetTier.minAmount) * 100));
+                const remaining = nextTargetTier.minAmount - grandTotal;
+                statusText = `Minimal belanja <b>Rp ${nextTargetTier.minAmount.toLocaleString('id-ID')}</b>. Tambah belanja <b>Rp ${remaining.toLocaleString('id-ID')}</b> lagi untuk klaim ${nextTargetTier.label || (nextTargetTier.rewardCount + ' Free Gimmick')}.`;
+            } else if (unlockedTier && nextTargetTier) {
+                const range = nextTargetTier.minAmount - unlockedTier.minAmount;
+                const currentInBonusRange = grandTotal - unlockedTier.minAmount;
+                progressPercent = Math.min(100, Math.floor((currentInBonusRange / range) * 100));
+                const remaining = nextTargetTier.minAmount - grandTotal;
+                statusText = `🎉 <b>Selamat! ${unlockedTier.label || (unlockedTier.rewardCount + ' Free Gimmick')} Terbuka!</b><br>Tambah <b>Rp ${remaining.toLocaleString('id-ID')}</b> lagi untuk unlock ${nextTargetTier.label || (nextTargetTier.rewardCount + ' Free Gimmick')}.`;
+            } else if (unlockedTier && !nextTargetTier) {
+                progressPercent = 100;
+                statusText = `🎉🎉 <b>LUAR BIASA! Target Maksimal Terlampaui!</b><br>Pembeli berhak klaim <b>${unlockedTier.label || (unlockedTier.rewardCount + ' Free Bonus Gimmick')}</b>.`;
+            }
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between text-[11px] font-bold text-amber-900">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-gift text-amber-600"></i> Syarat Promo Free Bonus / Gimmick:
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${unlockedTier ? 'bg-emerald-500 text-white' : 'bg-amber-200 text-amber-800'}">
+                        ${unlockedTier ? '🎉 ' + (unlockedTier.rewardCount + ' Bonus Unlocked') : 'Belum Memenuhi'}
+                    </span>
+                </div>
+                <div class="w-full bg-amber-200/80 rounded-full h-2 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-500 to-emerald-500 h-2 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+                </div>
+                <p class="text-[10px] text-amber-800 leading-tight">
+                    ${statusText}
+                </p>
+                ${unlockedTier ? `
+                    <button onclick="window.openClaimGimmickModal()" class="w-full mt-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-gift text-amber-300"></i> Pilih & Klaim Item Gimmick Gratis
+                    </button>
+                ` : ''}
+            `;
+        };
+
+        window.renderThresholdPromoList = function() {
+            const container = document.getElementById('thresholdPromoList');
+            if (!container) return;
+
+            if (!window.thresholdPromos || window.thresholdPromos.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-400 text-xs font-semibold">Belum ada syarat minimal belanja. Klik "Tambah Program Minimal Belanja" untuk membuat.</div>`;
+                return;
+            }
+
+            container.innerHTML = window.thresholdPromos.map(th => `
+                <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200 space-y-2 flex flex-col justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 bg-amber-200 text-amber-900 text-[10px] font-extrabold rounded-md uppercase">
+                                🎁 Min. Rp ${Number(th.minAmount).toLocaleString('id-ID')}
+                            </span>
+                            <div class="flex items-center gap-1">
+                                <button onclick="window.editThresholdPromo('${th.id}')" class="text-slate-400 hover:text-blue-600 text-xs transition p-1" title="Edit Program"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="window.deleteThresholdPromo('${th.id}')" class="text-slate-400 hover:text-rose-600 text-xs transition p-1" title="Hapus Program"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-xs text-slate-900">${th.name}</h4>
+                        <p class="text-[11px] text-amber-800 font-medium">Reward: <b>${th.rewardCount} Pcs Free Gimmick</b> (${th.label})</p>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.openModalThresholdPromo = function(editId = null) {
+            document.getElementById('thresholdEditId').value = editId || '';
+            const titleEl = document.getElementById('modalThresholdTitle');
+            if (titleEl) titleEl.innerText = editId ? 'Edit Program Minimal Belanja' : 'Tambah Program Minimal Belanja';
+
+            const th = editId ? window.thresholdPromos.find(t => String(t.id) === String(editId)) : null;
+
+            if (th) {
+                document.getElementById('thresholdName').value = th.name || '';
+                document.getElementById('thresholdMinAmount').value = th.minAmount || 500000;
+                document.getElementById('thresholdRewardCount').value = th.rewardCount || 1;
+                document.getElementById('thresholdLabel').value = th.label || '';
+            } else {
+                document.getElementById('formThresholdPromo').reset();
+                document.getElementById('thresholdEditId').value = '';
+            }
+
+            document.getElementById('modalThresholdPromo').classList.remove('hidden');
+        };
+
+        window.closeModalThresholdPromo = () => document.getElementById('modalThresholdPromo').classList.add('hidden');
+
+        window.saveThresholdPromo = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('thresholdEditId').value;
+            const name = document.getElementById('thresholdName').value.trim();
+            const minAmount = parseFloat(document.getElementById('thresholdMinAmount').value) || 0;
+            const rewardCount = parseInt(document.getElementById('thresholdRewardCount').value) || 1;
+            const label = document.getElementById('thresholdLabel').value.trim();
+
+            if (editId) {
+                const idx = window.thresholdPromos.findIndex(t => String(t.id) === String(editId));
+                if (idx > -1) {
+                    window.thresholdPromos[idx] = { ...window.thresholdPromos[idx], name, minAmount, rewardCount, label };
+                }
+            } else {
+                window.thresholdPromos.push({
+                    id: 'THRES-' + Date.now(),
+                    name, minAmount, rewardCount, label
+                });
+            }
+
+            if (window.firebaseDb) window.firebaseDb.ref('thresholdPromos').set(window.thresholdPromos);
+            window.closeModalThresholdPromo();
+            window.renderThresholdPromoList();
+            window.renderCart();
+            window.showToast('Program syarat minimal belanja berhasil disimpan!', 'info');
+        };
+
+        window.editThresholdPromo = function(id) {
+            window.openModalThresholdPromo(id);
+        };
+
+        window.deleteThresholdPromo = function(id) {
+            window.thresholdPromos = window.thresholdPromos.filter(t => String(t.id) !== String(id));
+            if (window.firebaseDb) window.firebaseDb.ref('thresholdPromos').set(window.thresholdPromos);
+            window.renderThresholdPromoList();
+            window.renderCart();
+            window.showToast('Program syarat minimal belanja dihapus!', 'warning');
         };
 
         window.clearCart = function() {
             window.cart = [];
+            const manualDiscEl = document.getElementById('cartManualDiscount');
+            if (manualDiscEl) manualDiscEl.value = 0;
             window.renderCart();
         };
 
@@ -907,12 +1361,14 @@
             }
 
             let subtotalNormal = 0;
-            let totalDiscount = 0;
+            let promoDiscounts = 0;
             window.cart.forEach(item => {
                 subtotalNormal += (item.price * item.qty);
-                totalDiscount += (item.discount || 0);
+                promoDiscounts += (item.discount || 0);
             });
 
+            const manualDiscInput = parseFloat(document.getElementById('cartManualDiscount')?.value) || 0;
+            const totalDiscount = promoDiscounts + manualDiscInput;
             const grandTotal = Math.max(0, subtotalNormal - totalDiscount);
             const customerName = document.getElementById('cartCustomerName').value.trim() || 'Umum';
 
@@ -924,6 +1380,7 @@
                 method: method,
                 subtotal: subtotalNormal,
                 discount: totalDiscount,
+                manualDiscount: manualDiscInput,
                 grandTotal: grandTotal,
                 items: JSON.parse(JSON.stringify(window.cart))
             };
@@ -937,6 +1394,7 @@
             });
 
             window.transactions.push(newTx);
+            window.currentReceiptTx = newTx;
 
             // Sync to Firebase
             if (window.firebaseDb) {
@@ -944,12 +1402,75 @@
                 window.firebaseDb.ref('transactions').set(window.transactions);
             }
 
+            // Reset Cart
             window.cart = [];
             document.getElementById('cartCustomerName').value = '';
+            const manualDiscEl = document.getElementById('cartManualDiscount');
+            if (manualDiscEl) manualDiscEl.value = 0;
+
             window.renderCart();
             window.renderCatalog();
             window.renderMasterTable();
-            window.showToast(`Transaksi ${method} berhasil disimpan!`, 'info');
+
+            // Open Receipt Dialog Box
+            window.openReceiptModal(newTx);
+        };
+
+        window.openReceiptModal = function(tx) {
+            const previewCard = document.getElementById('receiptPreviewCard');
+            const printArea = document.getElementById('printableReceiptArea');
+
+            const itemsRows = (tx.items || []).map(i => {
+                const itemTot = Math.max(0, (i.price * i.qty) - (i.discount || 0));
+                return `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px;">
+                    <div style="flex: 1; padding-right: 8px;">
+                        <div style="font-weight: bold; color: #000;">${i.name}</div>
+                        <div style="font-size: 10px; color: #444;">${i.qty}x @ Rp ${i.price.toLocaleString('id-ID')} ${i.discount > 0 ? `(-Rp ${i.discount.toLocaleString('id-ID')})` : ''}</div>
+                    </div>
+                    <div style="font-weight: bold; color: #000; white-space: nowrap;">Rp ${itemTot.toLocaleString('id-ID')}</div>
+                </div>
+            `}).join('');
+
+            const receiptHTML = `
+                <div style="text-align: center; padding-bottom: 8px; border-bottom: 1px dashed #888; margin-bottom: 8px;">
+                    <div style="font-weight: 800; font-size: 14px; text-transform: uppercase; color: #000;">ANYMIND BAZAAR</div>
+                    <div style="font-size: 10px; color: #555;">Bukti Pembayaran Official</div>
+                    <div style="font-size: 10px; font-weight: bold; color: #000; margin-top: 4px;">${tx.id} • ${tx.date} ${tx.time}</div>
+                </div>
+                <div style="font-size: 10px; color: #333; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between;"><span>Pembeli:</span><span style="font-weight: bold; color: #000;">${tx.customer}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span>Metode:</span><span style="font-weight: bold; color: #000;">${tx.method}</span></div>
+                </div>
+                <div style="padding-top: 4px; padding-bottom: 4px; border-top: 1px dashed #888;">
+                    ${itemsRows}
+                </div>
+                <div style="padding-top: 8px; border-top: 1px dashed #888; font-size: 11px; color: #000;">
+                    <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span><span>Rp ${tx.subtotal.toLocaleString('id-ID')}</span></div>
+                    ${tx.discount > 0 ? `<div style="display: flex; justify-content: space-between;"><span>Total Diskon:</span><span>- Rp ${tx.discount.toLocaleString('id-ID')}</span></div>` : ''}
+                    <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; color: #000; margin-top: 6px; padding-top: 4px; border-top: 1px solid #000;">
+                        <span>TOTAL BAYAR:</span>
+                        <span>Rp ${tx.grandTotal.toLocaleString('id-ID')}</span>
+                    </div>
+                </div>
+                <div style="text-align: center; padding-top: 12px; font-size: 9px; color: #666; font-style: italic;">
+                    Terima Kasih Telah Berbelanja!
+                </div>
+            `;
+
+            if (previewCard) previewCard.innerHTML = receiptHTML;
+            if (printArea) printArea.innerHTML = receiptHTML;
+
+            document.getElementById('modalReceipt').classList.remove('hidden');
+        };
+
+        window.closeReceiptModal = function() {
+            document.getElementById('modalReceipt').classList.add('hidden');
+            window.currentReceiptTx = null;
+        };
+
+        window.printReceipt = function() {
+            window.print();
         };
 
         window.renderCatalog = function() {
@@ -1035,6 +1556,11 @@
                 p.brand.toLowerCase().includes(query)
             );
 
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 text-xs font-semibold">Tidak ada SKU yang cocok dalam database.</td></tr>`;
+                return;
+            }
+
             tbody.innerHTML = filtered.map(p => `
                 <tr class="hover:bg-slate-50 transition">
                     <td class="p-3.5 font-mono text-slate-600">
@@ -1052,8 +1578,8 @@
                         ${p.promoTag ? `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded font-bold border border-rose-200">${p.promoTag}</span>` : '<span class="text-slate-400">-</span>'}
                     </td>
                     <td class="p-3.5 text-right space-x-1">
-                        <button onclick="window.editSKU('${p.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="window.deleteSKU('${p.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="window.editSKU('${p.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg" title="Edit SKU"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="window.deleteSKU('${p.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg" title="Hapus SKU"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -1087,6 +1613,7 @@
             window.closeModalAddSKU();
             window.renderCatalog();
             window.renderMasterTable();
+            window.updateBadgeCounts();
             window.showToast('Data SKU berhasil disimpan!', 'info');
         };
 
@@ -1198,6 +1725,7 @@
             window.closeModalPromo();
             window.renderPromoList();
             window.renderCatalog();
+            window.updateBadgeCounts();
             window.showToast('Program promo berhasil disimpan!', 'info');
         };
 
@@ -1223,6 +1751,15 @@
             const tbody = document.getElementById('transactionLogBody');
             if (!tbody) return;
             
+            if (window.transactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 text-xs font-semibold">Belum ada riwayat transaksi recorded.</td></tr>`;
+                document.getElementById('reportTotalRevenue').innerText = 'Rp 0';
+                document.getElementById('reportTotalTx').innerText = '0';
+                document.getElementById('reportTotalPcs').innerText = '0 Pcs';
+                document.getElementById('reportTotalDiscounts').innerText = 'Rp 0';
+                return;
+            }
+
             tbody.innerHTML = window.transactions.map(tx => {
                 totalRev += tx.grandTotal || 0;
                 totalDiscVal += tx.discount || 0;
@@ -1243,6 +1780,10 @@
                         <td class="p-3 text-slate-700 max-w-xs truncate">${itemsSummary}</td>
                         <td class="p-3 font-semibold text-slate-800">${tx.customer}</td>
                         <td class="p-3 text-right font-extrabold text-blue-700">Rp ${Number(tx.grandTotal).toLocaleString('id-ID')}</td>
+                        <td class="p-3 text-center space-x-1">
+                            <button onclick="window.openReceiptModalById('${tx.id}')" class="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs" title="Cetak Struk"><i class="fa-solid fa-print"></i></button>
+                            <button onclick="window.openDeleteTxModal('${tx.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs" title="Void / Hapus Transaksi"><i class="fa-solid fa-trash"></i></button>
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -1251,6 +1792,58 @@
             document.getElementById('reportTotalTx').innerText = totalTxCount.toString();
             document.getElementById('reportTotalPcs').innerText = `${totalPcsCount} Pcs`;
             document.getElementById('reportTotalDiscounts').innerText = `Rp ${totalDiscVal.toLocaleString('id-ID')}`;
+        };
+
+        window.openReceiptModalById = function(txId) {
+            const tx = window.transactions.find(t => String(t.id) === String(txId));
+            if (tx) {
+                window.openReceiptModal(tx);
+            }
+        };
+
+        window.openDeleteTxModal = function(txId) {
+            window.pendingDeleteTxId = txId;
+            const textEl = document.getElementById('deleteTxIdText');
+            if (textEl) textEl.innerText = txId;
+            document.getElementById('modalDeleteTx').classList.remove('hidden');
+        };
+
+        window.closeModalDeleteTx = function() {
+            window.pendingDeleteTxId = null;
+            document.getElementById('modalDeleteTx').classList.add('hidden');
+        };
+
+        window.confirmDeleteTransaction = function() {
+            const txId = window.pendingDeleteTxId;
+            if (!txId) return;
+
+            const txIndex = window.transactions.findIndex(t => String(t.id) === String(txId));
+            if (txIndex === -1) return;
+
+            const targetTx = window.transactions[txIndex];
+
+            // Restore Product Stocks
+            (targetTx.items || []).forEach(cartItem => {
+                const prod = window.products.find(p => String(p.id) === String(cartItem.id));
+                if (prod) {
+                    prod.stock += cartItem.qty;
+                }
+            });
+
+            // Remove transaction
+            window.transactions.splice(txIndex, 1);
+
+            // Sync to Firebase
+            if (window.firebaseDb) {
+                window.firebaseDb.ref('products').set(window.products);
+                window.firebaseDb.ref('transactions').set(window.transactions);
+            }
+
+            window.closeModalDeleteTx();
+            window.renderReports();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.showToast(`Transaksi ${txId} dihapus & stok dikembalikan!`, 'info');
         };
 
         window.exportToCSV = function() {
@@ -1308,6 +1901,9 @@
 
                 if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
                 window.closeModalBulkExcel();
+                window.renderCatalog();
+                window.renderMasterTable();
+                window.updateBadgeCounts();
                 window.showToast(`Berhasil mengimpor ${newItems} SKU dari Excel!`, 'info');
             };
             reader.readAsArrayBuffer(file);
@@ -1340,6 +1936,9 @@
 
             if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
             window.closeModalBulkExcel();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.updateBadgeCounts();
             window.showToast(`Berhasil menambahkan ${added} SKU!`, 'info');
         };
 
