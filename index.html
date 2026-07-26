@@ -416,11 +416,25 @@
                 </h3>
                 <button onclick="window.closeClaimGimmickModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <p class="text-xs text-slate-500">Pilih barang di bawah untuk ditambahkan langsung ke keranjang sebagai <b>Bonus Gratis (Rp 0)</b>.</p>
             
-            <div class="relative">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="gimmickSearchInput" oninput="window.renderGimmickPickerList()" placeholder="Cari nama barang atau brand gimmick..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-xs">
+                <p class="text-emerald-800 font-semibold">
+                    Klaim Rp 0 terkunci otomatis sesuai nominal belanja pembeli.
+                </p>
+                <span id="gimmickQuotaBadgeModal" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] shadow-sm">
+                    Sisa Kuota: 0 Pcs
+                </span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="gimmickSearchInput" oninput="window.renderGimmickPickerList()" placeholder="Cari nama barang atau brand gimmick..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer shrink-0 bg-slate-100 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-200 transition">
+                    <input type="checkbox" id="gimmickZeroPriceOnly" checked onchange="window.renderGimmickPickerList()" class="rounded text-emerald-600 focus:ring-emerald-500">
+                    <span>Hanya Barang Rp 0</span>
+                </label>
             </div>
 
             <div id="gimmickPickerContainer" class="max-h-72 overflow-y-auto space-y-2 pr-1">
@@ -436,7 +450,6 @@
     <!-- MODAL: Receipt / Struk Transaksi Success -->
     <div id="modalReceipt" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative">
-            <!-- Close (X) Icon Button Top Right -->
             <button onclick="window.closeReceiptModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center text-sm font-bold shadow-sm" title="Tutup Dialog">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -739,6 +752,46 @@
         window.currentReceiptTx = null;
         window.pendingDeleteTxId = null;
 
+        window.getGimmickQuotaInfo = function() {
+            let nonGimmickTotal = 0;
+            const manualDisc = parseFloat(document.getElementById('cartManualDiscount')?.value) || 0;
+
+            (window.cart || []).forEach(item => {
+                if (!item.isGimmick) {
+                    const itemSub = (item.price * item.qty);
+                    const itemDisc = (item.discount || 0);
+                    nonGimmickTotal += Math.max(0, itemSub - itemDisc);
+                }
+            });
+
+            const paidSpend = Math.max(0, nonGimmickTotal - manualDisc);
+            const sortedThres = [...(window.thresholdPromos || [])].sort((a,b) => a.minAmount - b.minAmount);
+            
+            let unlocked = null;
+            for (let t of sortedThres) {
+                if (paidSpend >= t.minAmount) {
+                    unlocked = t;
+                }
+            }
+
+            const maxAllowed = unlocked ? (parseInt(unlocked.rewardCount) || 0) : 0;
+            
+            let currentClaimed = 0;
+            (window.cart || []).forEach(item => {
+                if (item.isGimmick) {
+                    currentClaimed += item.qty;
+                }
+            });
+
+            return {
+                paidSpend,
+                unlockedTier: unlocked,
+                maxAllowed,
+                currentClaimed,
+                remainingQuota: Math.max(0, maxAllowed - currentClaimed)
+            };
+        };
+
         window.initFirebase = function(configObj) {
             try {
                 if (!firebase.apps.length) {
@@ -821,9 +874,16 @@
                 return;
             }
 
+            if (asGimmick) {
+                const quota = window.getGimmickQuotaInfo();
+                if (quota.remainingQuota <= 0) {
+                    window.showToast(`Kuota Gimmick Gratis sudah penuh! (Maksimal ${quota.maxAllowed} Pcs sesuai nominal belanja)`, 'warning');
+                    return;
+                }
+            }
+
             const existingIndex = window.cart.findIndex(i => String(i.id) === String(productId) && i.isGimmick === asGimmick);
             
-            // Check linked promos for this product
             const linkedPromo = window.promos.find(pr => pr.skus && pr.skus.includes(product.sku));
             const promoType = asGimmick ? 'GIMMICK' : (linkedPromo ? linkedPromo.type : (product.promoTag ? 'TAG' : ''));
 
@@ -832,6 +892,15 @@
                     window.showToast(`Stok tersisa hanya ${product.stock} pcs!`, 'warning');
                     return;
                 }
+
+                if (asGimmick) {
+                    const quota = window.getGimmickQuotaInfo();
+                    if (quota.remainingQuota <= 0) {
+                        window.showToast(`Kuota Gimmick Gratis sudah penuh! (Maksimal ${quota.maxAllowed} Pcs)`, 'warning');
+                        return;
+                    }
+                }
+
                 window.cart[existingIndex].qty += 1;
                 window.applyAutoPromoLogic(existingIndex);
             } else {
@@ -855,6 +924,9 @@
             }
 
             window.renderCart();
+            if (asGimmick) {
+                window.renderGimmickPickerList();
+            }
         };
 
         window.setCartQtyDirect = function(index, newQtyVal) {
@@ -871,6 +943,17 @@
                     window.showToast(`Stok tersisa hanya ${product.stock} pcs!`, 'warning');
                     parsedQty = product.stock;
                 }
+
+                if (item.isGimmick) {
+                    const quota = window.getGimmickQuotaInfo();
+                    const currentOtherGimmicks = quota.currentClaimed - item.qty;
+                    const maxForThisItem = Math.max(0, quota.maxAllowed - currentOtherGimmicks);
+                    if (parsedQty > maxForThisItem) {
+                        window.showToast(`Item Gimmick melebihi kuota! Maksimal ${quota.maxAllowed} Pcs diklaim.`, 'warning');
+                        parsedQty = Math.max(1, maxForThisItem);
+                    }
+                }
+
                 item.qty = parsedQty;
                 window.applyAutoPromoLogic(index);
             }
@@ -892,6 +975,15 @@
                     window.showToast(`Stok tersisa hanya ${product.stock} pcs!`, 'warning');
                     return;
                 }
+
+                if (item.isGimmick && delta > 0) {
+                    const quota = window.getGimmickQuotaInfo();
+                    if (quota.remainingQuota < delta) {
+                        window.showToast(`Kuota Gimmick Gratis sudah penuh! (Maksimal ${quota.maxAllowed} Pcs)`, 'warning');
+                        return;
+                    }
+                }
+
                 item.qty = newQty;
                 window.applyAutoPromoLogic(index);
             }
@@ -1032,11 +1124,143 @@
                 return;
             }
 
-            item.isGimmick = !item.isGimmick;
-            if (item.isGimmick) item.promoType = 'GIMMICK';
-            else item.promoType = '';
+            if (!item.isGimmick) {
+                const quota = window.getGimmickQuotaInfo();
+                if (quota.remainingQuota < item.qty) {
+                    window.showToast(`Sisa kuota Gimmick (${quota.remainingQuota} Pcs) tidak cukup untuk ${item.qty} Pcs item ini!`, 'warning');
+                    return;
+                }
+                item.isGimmick = true;
+                item.promoType = 'GIMMICK';
+            } else {
+                item.isGimmick = false;
+                item.promoType = '';
+            }
 
             window.applyAutoPromoLogic(index);
+            window.renderCart();
+        };
+
+        window.renderCart = function() {
+            const container = document.getElementById('cartItemsContainer');
+            if (!container) return;
+
+            const countBadge = document.getElementById('cartCountBadge');
+            const subtotalText = document.getElementById('cartSubtotalText');
+            const discountText = document.getElementById('cartDiscountText');
+            const grandTotalText = document.getElementById('cartGrandTotalText');
+
+            if (!window.cart || window.cart.length === 0) {
+                container.innerHTML = `
+                    <div class="py-12 text-center text-slate-400 text-xs font-semibold space-y-2">
+                        <i class="fa-solid fa-basket-shopping text-3xl text-slate-300 block"></i>
+                        <p>Keranjang belanja masih kosong.</p>
+                        <p class="text-[10px] text-slate-400">Pilih barang dari sheet kasir untuk memulai transaksi.</p>
+                    </div>
+                `;
+                if (countBadge) countBadge.innerText = '0';
+                if (subtotalText) subtotalText.innerText = 'Rp 0';
+                if (discountText) discountText.innerText = '- Rp 0';
+                if (grandTotalText) grandTotalText.innerText = 'Rp 0';
+                window.renderSpendThresholdProgress(0);
+                return;
+            }
+
+            let totalQty = 0;
+            let subtotalNormal = 0;
+            let totalPromoDiscount = 0;
+
+            container.innerHTML = window.cart.map((item, idx) => {
+                totalQty += item.qty;
+                const itemSubtotal = item.price * item.qty;
+                totalPromoDiscount += (item.discount || 0);
+                subtotalNormal += itemSubtotal;
+
+                const product = window.products.find(p => String(p.id) === String(item.id));
+                const maxStock = product ? product.stock : 999;
+
+                const isGimmick = item.isGimmick;
+                const isPaket = item.promoType === 'PAKET_PROMO';
+                const isBogo = item.promoType === 'BOGO';
+
+                return `
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 relative group hover:border-blue-300 transition">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <h4 class="font-bold text-xs text-slate-900">${item.name}</h4>
+                                    ${isGimmick ? '<span class="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded">FREE GIMMICK</span>' : ''}
+                                    ${isPaket ? '<span class="bg-purple-100 text-purple-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded">PAKET PROMO</span>' : ''}
+                                    ${isBogo ? '<span class="bg-blue-100 text-blue-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded">BOGO</span>' : ''}
+                                </div>
+                                <p class="text-[10px] text-slate-400">${item.brand} (${item.subsidiary}) • Rp ${Number(item.price).toLocaleString('id-ID')} / pc</p>
+                            </div>
+                            <button onclick="window.updateCartQty(${idx}, -${item.qty})" class="text-slate-400 hover:text-rose-500 transition text-xs p-1">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <!-- Action Promo Buttons -->
+                        <div class="flex items-center gap-1 flex-wrap pt-1">
+                            <button onclick="window.applyBogoPromo(${idx})" ${!item.hasPromoAssigned ? 'disabled' : ''} class="px-2 py-1 rounded text-[10px] font-bold transition ${isBogo ? 'bg-blue-600 text-white' : (item.hasPromoAssigned ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-100 text-slate-300 cursor-not-allowed')}">
+                                🔥 B1G1 / B2G2
+                            </button>
+                            <button onclick="window.applyPaketPromo(${idx})" ${!item.hasPromoAssigned ? 'disabled' : ''} class="px-2 py-1 rounded text-[10px] font-bold transition ${isPaket ? 'bg-purple-600 text-white' : (item.hasPromoAssigned ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-100 text-slate-300 cursor-not-allowed')}">
+                                🏷️ Set Harga Paket
+                            </button>
+                            <button onclick="window.toggleItemGimmickStatus(${idx})" ${!item.hasPromoAssigned ? 'disabled' : ''} class="px-2 py-1 rounded text-[10px] font-bold transition ${isGimmick ? 'bg-emerald-600 text-white' : (item.hasPromoAssigned ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-100 text-slate-300 cursor-not-allowed')}">
+                                🎁 Free Bonus
+                            </button>
+                        </div>
+
+                        <!-- Paket Custom Controls -->
+                        ${isPaket ? `
+                            <div class="bg-purple-50 border border-purple-200 p-2 rounded-lg space-y-1 text-xs">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold text-purple-900 text-[10px]">Harga 1 Paket (2 Pcs):</span>
+                                    <input type="number" value="${item.customBundlePrice}" onchange="window.updateSinglePaketPrice(${idx}, this.value)" class="w-24 px-2 py-0.5 bg-white border border-purple-300 rounded font-bold text-right text-xs text-purple-900 focus:outline-none">
+                                </div>
+                                <div class="flex items-center justify-between pt-1">
+                                    <span class="text-[10px] text-purple-800">Jumlah Paket:</span>
+                                    <div class="flex items-center gap-1">
+                                        <button onclick="window.updatePaketCount(${idx}, -1)" class="w-5 h-5 bg-purple-200 text-purple-800 rounded font-bold flex items-center justify-center hover:bg-purple-300 text-xs">-</button>
+                                        <span class="font-extrabold text-purple-900 text-xs px-1">${Math.max(1, Math.floor(item.qty / 2))} Paket (${item.qty} Pcs)</span>
+                                        <button onclick="window.updatePaketCount(${idx}, 1)" class="w-5 h-5 bg-purple-200 text-purple-800 rounded font-bold flex items-center justify-center hover:bg-purple-300 text-xs">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- Quantity & Price Row -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                            <div class="flex items-center gap-1">
+                                <button onclick="window.updateCartQty(${idx}, -1)" class="w-6 h-6 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold text-xs transition flex items-center justify-center">-</button>
+                                <input type="number" min="1" max="${maxStock}" value="${item.qty}" onchange="window.setCartQtyDirect(${idx}, this.value)" class="w-12 px-1 py-0.5 bg-white border border-slate-200 rounded text-center text-xs font-extrabold text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                <span class="text-[10px] font-bold text-slate-500">pcs</span>
+                                <button onclick="window.updateCartQty(${idx}, 1)" class="w-6 h-6 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold text-xs transition flex items-center justify-center">+</button>
+                            </div>
+                            <div class="text-right">
+                                ${item.discount > 0 ? `<span class="text-[10px] text-slate-400 line-through block">Rp ${itemSubtotal.toLocaleString('id-ID')}</span>` : ''}
+                                <span class="font-extrabold text-xs text-blue-700">Rp ${Math.max(0, itemSubtotal - (item.discount || 0)).toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const manualDisc = parseFloat(document.getElementById('cartManualDiscount')?.value) || 0;
+            const grandTotal = Math.max(0, subtotalNormal - totalPromoDiscount - manualDisc);
+
+            if (countBadge) countBadge.innerText = totalQty.toString();
+            if (subtotalText) subtotalText.innerText = `Rp ${subtotalNormal.toLocaleString('id-ID')}`;
+            if (discountText) discountText.innerText = `- Rp ${(totalPromoDiscount + manualDisc).toLocaleString('id-ID')}`;
+            if (grandTotalText) grandTotalText.innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+
+            window.renderSpendThresholdProgress(grandTotal);
+        };
+
+        window.clearCart = function() {
+            window.cart = [];
             window.renderCart();
         };
 
@@ -1053,165 +1277,72 @@
             const container = document.getElementById('gimmickPickerContainer');
             if (!container) return;
 
+            const quota = window.getGimmickQuotaInfo();
+            const badgeEl = document.getElementById('gimmickQuotaBadgeModal');
+            if (badgeEl) {
+                badgeEl.innerText = `Sisa Kuota: ${quota.remainingQuota} / ${quota.maxAllowed} Pcs`;
+            }
+
             const searchVal = (document.getElementById('gimmickSearchInput')?.value || '').toLowerCase();
-            const filteredProds = window.products.filter(p => 
-                p.name.toLowerCase().includes(searchVal) || 
-                p.brand.toLowerCase().includes(searchVal) ||
-                p.sku.toLowerCase().includes(searchVal)
-            );
+            const zeroPriceOnly = document.getElementById('gimmickZeroPriceOnly')?.checked ?? true;
+
+            const filteredProds = window.products.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(searchVal) || 
+                                      p.brand.toLowerCase().includes(searchVal) ||
+                                      p.sku.toLowerCase().includes(searchVal);
+                const matchesPrice = zeroPriceOnly ? (parseFloat(p.price) === 0 || (p.promoTag && p.promoTag.toLowerCase().includes('gimmick'))) : true;
+                return matchesSearch && matchesPrice;
+            });
 
             if (filteredProds.length === 0) {
-                container.innerHTML = `<div class="py-8 text-center text-slate-400 text-xs">Tidak ada produk ditemukan.</div>`;
-                return;
-            }
-
-            container.innerHTML = filteredProds.map(p => `
-                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
-                    <div>
-                        <h4 class="font-bold text-xs text-slate-900">${p.name}</h4>
-                        <p class="text-[10px] text-slate-500">${p.brand} (${p.subsidiary}) • Stok: <b>${p.stock} pcs</b></p>
-                    </div>
-                    <button onclick="window.addToCart('${p.id}', true); window.showToast('Item Gimmick Gratis Ditambahkan!', 'info');" ${p.stock <= 0 ? 'disabled' : ''} class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0">
-                        <i class="fa-solid fa-plus"></i> Klaim Gratis
-                    </button>
-                </div>
-            `).join('');
-        };
-
-        window.renderCart = function() {
-            const container = document.getElementById('cartItemsContainer');
-            if (!container) return;
-
-            const manualDiscInput = parseFloat(document.getElementById('cartManualDiscount')?.value) || 0;
-
-            if (window.cart.length === 0) {
                 container.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-center py-12 text-slate-400">
-                        <i class="fa-solid fa-basket-shopping text-4xl mb-2 text-slate-300"></i>
-                        <p class="text-xs font-semibold">Keranjang transaksi masih kosong</p>
+                    <div class="py-8 text-center text-slate-400 text-xs font-semibold space-y-1">
+                        <i class="fa-solid fa-box-open text-2xl text-slate-300 block mb-1"></i>
+                        <p>Tidak ada produk gimmick ditemukan ${zeroPriceOnly ? 'dengan harga Rp 0' : ''}.</p>
+                        ${zeroPriceOnly ? `<p class="text-[10px] text-slate-400">Coba uncheck centang <b>"Hanya Barang Rp 0"</b> di atas atau tambahkan SKU harga Rp 0 di Master List.</p>` : ''}
                     </div>
                 `;
-                document.getElementById('cartSubtotalText').innerText = 'Rp 0';
-                document.getElementById('cartDiscountText').innerText = '- Rp 0';
-                document.getElementById('cartGrandTotalText').innerText = 'Rp 0';
-                document.getElementById('cartCountBadge').innerText = '0';
-                window.renderSpendThresholdProgress(0);
                 return;
             }
 
-            let totalQty = 0;
-            let subtotalNormal = 0;
-            let totalDiscount = 0;
-
-            container.innerHTML = window.cart.map((item, index) => {
-                const itemSubtotal = item.price * item.qty;
-                const itemDiscount = item.discount || 0;
-                const itemFinal = Math.max(0, itemSubtotal - itemDiscount);
-
-                totalQty += item.qty;
-                subtotalNormal += itemSubtotal;
-                totalDiscount += itemDiscount;
-
-                const isPromoAllowed = item.hasPromoAssigned;
+            container.innerHTML = filteredProds.map(p => {
+                const isOutOfStock = p.stock <= 0;
+                const isQuotaFull = quota.remainingQuota <= 0;
+                const canClaim = !isOutOfStock && !isQuotaFull;
 
                 return `
-                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2">
-                        <div class="flex items-start justify-between gap-2">
-                            <div>
-                                <h4 class="font-bold text-xs text-slate-900 leading-snug">${item.name}</h4>
-                                <p class="text-[10px] text-slate-500">${item.brand} (${item.subsidiary}) • Rp ${item.price.toLocaleString('id-ID')} / pc</p>
+                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2 hover:border-emerald-300 transition">
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <h4 class="font-bold text-xs text-slate-900">${p.name}</h4>
+                                ${parseFloat(p.price) === 0 ? `<span class="bg-emerald-100 text-emerald-800 text-[9px] font-extrabold px-1.5 py-0.5 rounded">Rp 0 (Gimmick)</span>` : `<span class="bg-slate-200 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded">Rp ${Number(p.price).toLocaleString('id-ID')}</span>`}
                             </div>
-                            <button onclick="window.updateCartQty(${index}, -${item.qty})" class="text-slate-400 hover:text-rose-500 text-xs"><i class="fa-solid fa-xmark"></i></button>
+                            <p class="text-[10px] text-slate-500">${p.brand} (${p.subsidiary}) • Stok: <b>${p.stock} pcs</b></p>
                         </div>
-
-                        <!-- Promo Action Bar (Disabled if non-promo product) -->
-                        ${isPromoAllowed ? `
-                            <div class="flex items-center gap-1 overflow-x-auto pb-0.5 text-[10px]">
-                                <button onclick="window.applyBogoPromo(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.promoType === 'BOGO' ? 'bg-purple-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
-                                    🔥 B1G1 / B2G2
-                                </button>
-                                <button onclick="window.applyPaketPromo(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.promoType === 'PAKET_PROMO' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
-                                    🏷️ Set Harga Paket
-                                </button>
-                                <button onclick="window.toggleItemGimmickStatus(${index})" class="px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 ${item.isGimmick ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
-                                    🎁 Free Bonus
-                                </button>
-                            </div>
-                        ` : `
-                            <div class="text-[10px] text-slate-400 font-semibold bg-slate-100 px-2 py-1 rounded-md border border-slate-200 flex items-center gap-1">
-                                <i class="fa-solid fa-lock text-[9px]"></i> Harga Normal (Tanpa Promo)
-                            </div>
-                        `}
-
-                        <!-- Package Config Panel -->
-                        ${item.promoType === 'PAKET_PROMO' ? `
-                            <div class="bg-blue-50/80 border border-blue-200 p-2.5 rounded-xl space-y-2 text-[11px]">
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="font-semibold text-blue-900">Harga 1 Paket (Isi 2 Pcs):</span>
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-blue-700 font-bold">Rp</span>
-                                        <input type="number" min="0" value="${item.customBundlePrice || (item.price * 2)}" onchange="window.updateSinglePaketPrice(${index}, this.value)" class="w-24 px-2 py-1 border border-blue-300 rounded-lg font-bold text-right text-blue-900 focus:ring-1 focus:ring-blue-500">
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-blue-200/60">
-                                    <span class="font-semibold text-blue-900">Pilihan Jumlah Paket:</span>
-                                    <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-blue-300 shadow-sm">
-                                        <button onclick="window.updatePaketCount(${index}, -1)" class="w-5 h-5 rounded bg-blue-100 text-blue-800 flex items-center justify-center font-bold hover:bg-blue-200 transition">-</button>
-                                        <span class="font-bold text-blue-900 text-xs px-1">${Math.max(1, Math.floor(item.qty / 2))} Paket (${item.qty} Pcs)</span>
-                                        <button onclick="window.updatePaketCount(${index}, 1)" class="w-5 h-5 rounded bg-blue-100 text-blue-800 flex items-center justify-center font-bold hover:bg-blue-200 transition">+</button>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-
-                        <!-- Standard Item Controls -->
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/60">
-                            <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm">
-                                <button onclick="window.updateCartQty(${index}, -1)" class="w-6 h-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-200 active:bg-slate-300 transition">-</button>
-                                <div class="flex items-center gap-1 px-1">
-                                    <input type="number" min="1" value="${item.qty}" onchange="window.setCartQtyDirect(${index}, this.value)" class="w-12 text-center font-bold text-xs bg-slate-50 border border-slate-300 rounded py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900">
-                                    <span class="text-[11px] font-semibold text-slate-500">pcs</span>
-                                </div>
-                                <button onclick="window.updateCartQty(${index}, 1)" class="w-6 h-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-200 active:bg-slate-300 transition">+</button>
-                            </div>
-                            <div class="text-right">
-                                ${itemDiscount > 0 ? `<span class="text-[10px] text-slate-400 line-through block">Rp ${itemSubtotal.toLocaleString('id-ID')}</span>` : ''}
-                                <span class="font-extrabold text-xs text-blue-700">Rp ${itemFinal.toLocaleString('id-ID')}</span>
-                            </div>
-                        </div>
+                        <button onclick="window.addToCart('${p.id}', true); window.showToast('Item Gimmick Gratis Ditambahkan!', 'info');" ${!canClaim ? 'disabled' : ''} class="px-3 py-1.5 ${canClaim ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0">
+                            <i class="fa-solid fa-plus"></i> ${isQuotaFull ? 'Kuota Penuh' : (isOutOfStock ? 'Stok Habis' : 'Klaim Gratis')}
+                        </button>
                     </div>
                 `;
             }).join('');
-
-            const grandTotalDiscount = totalDiscount + manualDiscInput;
-            const grandTotal = Math.max(0, subtotalNormal - grandTotalDiscount);
-
-            document.getElementById('cartSubtotalText').innerText = `Rp ${subtotalNormal.toLocaleString('id-ID')}`;
-            document.getElementById('cartDiscountText').innerText = `- Rp ${grandTotalDiscount.toLocaleString('id-ID')}`;
-            document.getElementById('cartGrandTotalText').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
-            document.getElementById('cartCountBadge').innerText = totalQty.toString();
-
-            // Render Minimum Spend Progress Bar
-            window.renderSpendThresholdProgress(grandTotal);
         };
 
         window.renderSpendThresholdProgress = function(grandTotal) {
             const container = document.getElementById('cartThresholdProgressContainer');
             if (!container) return;
 
+            const quota = window.getGimmickQuotaInfo();
             const sortedThresholds = [...(window.thresholdPromos || [])].sort((a, b) => a.minAmount - b.minAmount);
             if (sortedThresholds.length === 0) {
                 container.innerHTML = '';
                 return;
             }
 
-            let unlockedTier = null;
+            let unlockedTier = quota.unlockedTier;
             let nextTargetTier = null;
 
             for (let i = 0; i < sortedThresholds.length; i++) {
-                if (grandTotal >= sortedThresholds[i].minAmount) {
-                    unlockedTier = sortedThresholds[i];
-                } else {
+                if (quota.paidSpend < sortedThresholds[i].minAmount) {
                     nextTargetTier = sortedThresholds[i];
                     break;
                 }
@@ -1221,27 +1352,29 @@
             let statusText = '';
 
             if (!unlockedTier && nextTargetTier) {
-                progressPercent = Math.min(100, Math.floor((grandTotal / nextTargetTier.minAmount) * 100));
-                const remaining = nextTargetTier.minAmount - grandTotal;
+                progressPercent = Math.min(100, Math.floor((quota.paidSpend / nextTargetTier.minAmount) * 100));
+                const remaining = nextTargetTier.minAmount - quota.paidSpend;
                 statusText = `Minimal belanja <b>Rp ${nextTargetTier.minAmount.toLocaleString('id-ID')}</b>. Tambah belanja <b>Rp ${remaining.toLocaleString('id-ID')}</b> lagi untuk klaim ${nextTargetTier.label || (nextTargetTier.rewardCount + ' Free Gimmick')}.`;
             } else if (unlockedTier && nextTargetTier) {
                 const range = nextTargetTier.minAmount - unlockedTier.minAmount;
-                const currentInBonusRange = grandTotal - unlockedTier.minAmount;
+                const currentInBonusRange = quota.paidSpend - unlockedTier.minAmount;
                 progressPercent = Math.min(100, Math.floor((currentInBonusRange / range) * 100));
-                const remaining = nextTargetTier.minAmount - grandTotal;
+                const remaining = nextTargetTier.minAmount - quota.paidSpend;
                 statusText = `🎉 <b>Selamat! ${unlockedTier.label || (unlockedTier.rewardCount + ' Free Gimmick')} Terbuka!</b><br>Tambah <b>Rp ${remaining.toLocaleString('id-ID')}</b> lagi untuk unlock ${nextTargetTier.label || (nextTargetTier.rewardCount + ' Free Gimmick')}.`;
             } else if (unlockedTier && !nextTargetTier) {
                 progressPercent = 100;
                 statusText = `🎉🎉 <b>LUAR BIASA! Target Maksimal Terlampaui!</b><br>Pembeli berhak klaim <b>${unlockedTier.label || (unlockedTier.rewardCount + ' Free Bonus Gimmick')}</b>.`;
             }
 
+            const isOverQuota = quota.currentClaimed > quota.maxAllowed;
+
             container.innerHTML = `
                 <div class="flex items-center justify-between text-[11px] font-bold text-amber-900">
                     <span class="flex items-center gap-1.5">
                         <i class="fa-solid fa-gift text-amber-600"></i> Syarat Promo Free Bonus / Gimmick:
                     </span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${unlockedTier ? 'bg-emerald-500 text-white' : 'bg-amber-200 text-amber-800'}">
-                        ${unlockedTier ? '🎉 ' + (unlockedTier.rewardCount + ' Bonus Unlocked') : 'Belum Memenuhi'}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${isOverQuota ? 'bg-rose-500 text-white' : (unlockedTier ? 'bg-emerald-500 text-white' : 'bg-amber-200 text-amber-800')}">
+                        ${isOverQuota ? '⚠️ Melebihi Kuota (' + quota.currentClaimed + '/' + quota.maxAllowed + ')' : (unlockedTier ? '🎉 Terklaim ' + quota.currentClaimed + '/' + quota.maxAllowed + ' Pcs' : 'Belum Memenuhi')}
                     </span>
                 </div>
                 <div class="w-full bg-amber-200/80 rounded-full h-2 overflow-hidden">
@@ -1252,111 +1385,21 @@
                 </p>
                 ${unlockedTier ? `
                     <button onclick="window.openClaimGimmickModal()" class="w-full mt-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-gift text-amber-300"></i> Pilih & Klaim Item Gimmick Gratis
+                        <i class="fa-solid fa-gift text-amber-300"></i> Pilih & Klaim Item Gimmick Gratis (${quota.remainingQuota} Sisa)
                     </button>
                 ` : ''}
             `;
         };
 
-        window.renderThresholdPromoList = function() {
-            const container = document.getElementById('thresholdPromoList');
-            if (!container) return;
-
-            if (!window.thresholdPromos || window.thresholdPromos.length === 0) {
-                container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-400 text-xs font-semibold">Belum ada syarat minimal belanja. Klik "Tambah Program Minimal Belanja" untuk membuat.</div>`;
-                return;
-            }
-
-            container.innerHTML = window.thresholdPromos.map(th => `
-                <div class="bg-amber-50/60 p-4 rounded-xl border border-amber-200 space-y-2 flex flex-col justify-between">
-                    <div class="space-y-1">
-                        <div class="flex items-center justify-between">
-                            <span class="px-2 py-0.5 bg-amber-200 text-amber-900 text-[10px] font-extrabold rounded-md uppercase">
-                                🎁 Min. Rp ${Number(th.minAmount).toLocaleString('id-ID')}
-                            </span>
-                            <div class="flex items-center gap-1">
-                                <button onclick="window.editThresholdPromo('${th.id}')" class="text-slate-400 hover:text-blue-600 text-xs transition p-1" title="Edit Program"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="window.deleteThresholdPromo('${th.id}')" class="text-slate-400 hover:text-rose-600 text-xs transition p-1" title="Hapus Program"><i class="fa-solid fa-trash-can"></i></button>
-                            </div>
-                        </div>
-                        <h4 class="font-bold text-xs text-slate-900">${th.name}</h4>
-                        <p class="text-[11px] text-amber-800 font-medium">Reward: <b>${th.rewardCount} Pcs Free Gimmick</b> (${th.label})</p>
-                    </div>
-                </div>
-            `).join('');
-        };
-
-        window.openModalThresholdPromo = function(editId = null) {
-            document.getElementById('thresholdEditId').value = editId || '';
-            const titleEl = document.getElementById('modalThresholdTitle');
-            if (titleEl) titleEl.innerText = editId ? 'Edit Program Minimal Belanja' : 'Tambah Program Minimal Belanja';
-
-            const th = editId ? window.thresholdPromos.find(t => String(t.id) === String(editId)) : null;
-
-            if (th) {
-                document.getElementById('thresholdName').value = th.name || '';
-                document.getElementById('thresholdMinAmount').value = th.minAmount || 500000;
-                document.getElementById('thresholdRewardCount').value = th.rewardCount || 1;
-                document.getElementById('thresholdLabel').value = th.label || '';
-            } else {
-                document.getElementById('formThresholdPromo').reset();
-                document.getElementById('thresholdEditId').value = '';
-            }
-
-            document.getElementById('modalThresholdPromo').classList.remove('hidden');
-        };
-
-        window.closeModalThresholdPromo = () => document.getElementById('modalThresholdPromo').classList.add('hidden');
-
-        window.saveThresholdPromo = function(e) {
-            e.preventDefault();
-            const editId = document.getElementById('thresholdEditId').value;
-            const name = document.getElementById('thresholdName').value.trim();
-            const minAmount = parseFloat(document.getElementById('thresholdMinAmount').value) || 0;
-            const rewardCount = parseInt(document.getElementById('thresholdRewardCount').value) || 1;
-            const label = document.getElementById('thresholdLabel').value.trim();
-
-            if (editId) {
-                const idx = window.thresholdPromos.findIndex(t => String(t.id) === String(editId));
-                if (idx > -1) {
-                    window.thresholdPromos[idx] = { ...window.thresholdPromos[idx], name, minAmount, rewardCount, label };
-                }
-            } else {
-                window.thresholdPromos.push({
-                    id: 'THRES-' + Date.now(),
-                    name, minAmount, rewardCount, label
-                });
-            }
-
-            if (window.firebaseDb) window.firebaseDb.ref('thresholdPromos').set(window.thresholdPromos);
-            window.closeModalThresholdPromo();
-            window.renderThresholdPromoList();
-            window.renderCart();
-            window.showToast('Program syarat minimal belanja berhasil disimpan!', 'info');
-        };
-
-        window.editThresholdPromo = function(id) {
-            window.openModalThresholdPromo(id);
-        };
-
-        window.deleteThresholdPromo = function(id) {
-            window.thresholdPromos = window.thresholdPromos.filter(t => String(t.id) !== String(id));
-            if (window.firebaseDb) window.firebaseDb.ref('thresholdPromos').set(window.thresholdPromos);
-            window.renderThresholdPromoList();
-            window.renderCart();
-            window.showToast('Program syarat minimal belanja dihapus!', 'warning');
-        };
-
-        window.clearCart = function() {
-            window.cart = [];
-            const manualDiscEl = document.getElementById('cartManualDiscount');
-            if (manualDiscEl) manualDiscEl.value = 0;
-            window.renderCart();
-        };
-
         window.processCheckout = function(method) {
             if (window.cart.length === 0) {
                 window.showToast('Keranjang transaksi masih kosong!', 'warning');
+                return;
+            }
+
+            const quota = window.getGimmickQuotaInfo();
+            if (quota.currentClaimed > quota.maxAllowed) {
+                window.showToast(`Total item Gimmick (${quota.currentClaimed} Pcs) melebihi kuota gratis (${quota.maxAllowed} Pcs)! Kurangi item gimmick terlebih dahulu.`, 'error');
                 return;
             }
 
@@ -1370,7 +1413,7 @@
             const manualDiscInput = parseFloat(document.getElementById('cartManualDiscount')?.value) || 0;
             const totalDiscount = promoDiscounts + manualDiscInput;
             const grandTotal = Math.max(0, subtotalNormal - totalDiscount);
-            const customerName = document.getElementById('cartCustomerName').value.trim() || 'Umum';
+            const customerName = document.getElementById('cartCustomerName')?.value.trim() || 'Umum';
 
             const newTx = {
                 id: 'TRX-' + Date.now(),
@@ -1404,7 +1447,8 @@
 
             // Reset Cart
             window.cart = [];
-            document.getElementById('cartCustomerName').value = '';
+            const custEl = document.getElementById('cartCustomerName');
+            if (custEl) custEl.value = '';
             const manualDiscEl = document.getElementById('cartManualDiscount');
             if (manualDiscEl) manualDiscEl.value = 0;
 
@@ -1479,7 +1523,6 @@
 
             const searchQuery = (document.getElementById('posSearch')?.value || '').toLowerCase();
             
-            // Render Brand Chips
             const brandContainer = document.getElementById('brandFilterContainer');
             if (brandContainer) {
                 const brands = ['ALL', ...new Set(window.products.map(p => p.brand).filter(Boolean))];
@@ -1740,6 +1783,92 @@
             window.renderCatalog();
             window.updateBadgeCounts();
             window.showToast('Program promo berhasil dihapus!', 'warning');
+        };
+
+        window.openModalThresholdPromo = function(editId = null) {
+            document.getElementById('thresholdEditId').value = editId || '';
+            const titleEl = document.getElementById('modalThresholdTitle');
+            if (titleEl) titleEl.innerText = editId ? 'Edit Program Minimal Belanja' : 'Tambah Program Minimal Belanja';
+            
+            const item = editId ? window.thresholdPromos.find(t => String(t.id) === String(editId)) : null;
+
+            if (item) {
+                document.getElementById('thresholdName').value = item.name || '';
+                document.getElementById('thresholdMinAmount').value = item.minAmount || 500000;
+                document.getElementById('thresholdRewardCount').value = item.rewardCount || 1;
+                document.getElementById('thresholdLabel').value = item.label || '';
+            } else {
+                document.getElementById('formThresholdPromo').reset();
+                document.getElementById('thresholdEditId').value = '';
+            }
+
+            document.getElementById('modalThresholdPromo').classList.remove('hidden');
+        };
+
+        window.closeModalThresholdPromo = function() {
+            document.getElementById('modalThresholdPromo').classList.add('hidden');
+        };
+
+        window.saveThresholdPromo = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('thresholdEditId').value;
+            const name = document.getElementById('thresholdName').value.trim();
+            const minAmount = parseFloat(document.getElementById('thresholdMinAmount').value) || 0;
+            const rewardCount = parseInt(document.getElementById('thresholdRewardCount').value) || 1;
+            const label = document.getElementById('thresholdLabel').value.trim();
+
+            if (editId) {
+                const idx = window.thresholdPromos.findIndex(t => String(t.id) === String(editId));
+                if (idx > -1) {
+                    window.thresholdPromos[idx] = { ...window.thresholdPromos[idx], name, minAmount, rewardCount, label };
+                }
+            } else {
+                window.thresholdPromos.push({
+                    id: 'THRES-' + Date.now(),
+                    name, minAmount, rewardCount, label
+                });
+            }
+
+            if (window.firebaseDb) window.firebaseDb.ref('thresholdPromos').set(window.thresholdPromos);
+            window.closeModalThresholdPromo();
+            window.renderThresholdPromoList();
+            window.renderCart();
+            window.showToast('Program syarat minimal belanja berhasil disimpan!', 'info');
+        };
+
+        window.deleteThresholdPromo = function(id) {
+            window.thresholdPromos = window.thresholdPromos.filter(t => String(t.id) !== String(id));
+            if (window.firebaseDb) window.firebaseDb.ref('thresholdPromos').set(window.thresholdPromos);
+            window.renderThresholdPromoList();
+            window.renderCart();
+            window.showToast('Program syarat minimal belanja dihapus!', 'warning');
+        };
+
+        window.renderThresholdPromoList = function() {
+            const container = document.getElementById('thresholdPromoList');
+            if (!container) return;
+
+            if (!window.thresholdPromos || window.thresholdPromos.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 text-xs font-semibold col-span-full">Belum ada syarat program minimal belanja. Klik "+ Tambah Program Minimal Belanja".</p>`;
+                return;
+            }
+
+            container.innerHTML = window.thresholdPromos.map(t => `
+                <div class="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-2 flex items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-gift text-amber-500 text-sm"></i>
+                            <h4 class="font-bold text-xs text-slate-900">${t.name}</h4>
+                        </div>
+                        <p class="text-[11px] text-slate-600">Belanja Min: <b class="text-amber-800">Rp ${Number(t.minAmount).toLocaleString('id-ID')}</b></p>
+                        <span class="inline-block text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 mt-0.5">${t.label || (t.rewardCount + ' Free Bonus Gimmick')}</span>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="window.openModalThresholdPromo('${t.id}')" class="p-1.5 text-slate-400 hover:text-blue-600 transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="window.deleteThresholdPromo('${t.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
+            `).join('');
         };
 
         window.renderReports = function() {
@@ -2098,10 +2227,8 @@
                 const logoData = evt.target.result;
                 window.applyCustomLogo(logoData);
                 
-                // Save locally
                 localStorage.setItem('custom_brand_logo', logoData);
 
-                // Sync to Firebase if connected
                 if (window.firebaseDb) {
                     window.firebaseDb.ref('customLogo').set(logoData);
                 }
@@ -2148,6 +2275,7 @@
 
         window.onload = function() {
             window.initFirebase(DEFAULT_FIREBASE_CONFIG);
+            window.renderThresholdPromoList();
             window.renderCart();
             window.updateBadgeCounts();
 
