@@ -462,21 +462,79 @@
         </section>
     </main>
 
+    
+    <!-- Modal Konfirmasi Checkout Review -->
+    <div id="modalConfirmCheckout" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-check text-emerald-600"></i> Konfirmasi Transaksi
+                </h3>
+                <button onclick="window.closeConfirmCheckoutModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs space-y-1">
+                <div class="flex justify-between font-semibold text-slate-700">
+                    <span>Metode Pembayaran:</span>
+                    <span id="confirmPaymentMethodBadge" class="px-2 py-0.5 rounded font-bold bg-blue-600 text-white uppercase text-[10px]">QRIS</span>
+                </div>
+                <div class="flex justify-between font-semibold text-slate-700">
+                    <span>Nama Pembeli / Dept:</span>
+                    <span id="confirmCustomerNameText" class="font-bold text-slate-900">Umum</span>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 max-h-48 text-xs">
+                <span class="font-bold text-slate-600 block border-b border-slate-200 pb-1 mb-1">Detail Item Ringkasan:</span>
+                <div id="confirmItemsList" class="space-y-1.5">
+                    <!-- Dynamic review items -->
+                </div>
+            </div>
+
+            <div class="bg-slate-100 p-3 rounded-xl flex items-center justify-between text-xs">
+                <span class="font-bold text-slate-700">Total Yang Harus Dibayar:</span>
+                <span id="confirmGrandTotalText" class="text-lg font-extrabold text-blue-700">Rp 0</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button type="button" onclick="window.closeConfirmCheckoutModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                    Batal / Edit Keranjang
+                </button>
+                <button type="button" onclick="window.finalizeCheckout()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-check text-sm"></i> Konfirmasi & Bayar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Inbound / Restock Barang -->
     <div id="modalInbound" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
-            <div class="flex items-center justify-between">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl p-6 space-y-4 animate-fade-in max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between shrink-0">
                 <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-boxes-packing text-emerald-600"></i> Restock / Inbound Barang Masuk
                 </h3>
                 <button onclick="window.closeModalInbound()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             
-            <p class="text-xs text-slate-500">Pilih SKU yang sudah ada untuk menambah jumlah stok masuk agar <b class="text-rose-600">tidak terjadi SKU ganda</b>.</p>
+            <!-- Inbound Mode Switch Tabs -->
+            <div class="flex items-center gap-2 border-b border-slate-200 pb-2 shrink-0 text-xs font-bold">
+                <button id="inboundTabSingleBtn" onclick="window.switchInboundTab('single')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition">
+                    <i class="fa-solid fa-barcode"></i> Input Restock Per-SKU
+                </button>
+                <button id="inboundTabBulkBtn" onclick="window.switchInboundTab('bulk')" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-file-excel text-emerald-600"></i> Upload Bulk Inbound (Excel/CSV)
+                </button>
+            </div>
 
-            <form id="formInbound" onsubmit="window.saveInboundStock(event)" class="space-y-3 text-xs">
+            <!-- TAB 1: SINGLE SKU INBOUND WITH SEARCH & BARCODE -->
+            <form id="formInboundSingle" onsubmit="window.saveInboundStock(event)" class="space-y-3 text-xs overflow-y-auto flex-1 pr-1">
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Pilih SKU / Barang Masuk *</label>
+                    <label class="font-bold text-slate-700 block mb-1">Cari Barcode / SKU / Nama Produk *</label>
+                    <div class="relative mb-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="inboundSearchInput" oninput="window.filterInboundSkuOptions()" placeholder="Ketik barcode, SKU, nama barang, atau scan USB Barcode..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
                     <select id="inboundSkuSelect" required onchange="window.handleInboundSelectChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium">
                         <!-- Dynamic SKU options -->
                     </select>
@@ -513,22 +571,51 @@
                     <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm">Simpan Restock Stok</button>
                 </div>
             </form>
+
+            <!-- TAB 2: BULK EXCEL INBOUND -->
+            <div id="formInboundBulk" class="space-y-3 text-xs overflow-y-auto flex-1 pr-1 hidden">
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+                    <span class="font-bold text-emerald-900">Format File Excel / CSV Restock:</span>
+                    <p class="text-emerald-800 text-[11px]">Kolom 1: <b>Barcode atau SKU</b> | Kolom 2: <b>Jumlah Restock (+Pcs)</b> | Kolom 3: <b>No. Surat Jalan</b> | Kolom 4: <b>Catatan</b></p>
+                    <p class="text-emerald-700 text-[10px]">Sistem akan otomatis mencocokkan SKU/Barcode yang sudah ada dan menambah stok tanpa duplikasi.</p>
+                </div>
+
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-emerald-500 transition cursor-pointer relative bg-slate-50">
+                    <input type="file" accept=".xlsx, .xls, .csv" onchange="window.handleBulkInboundFileUpload(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <i class="fa-solid fa-file-excel text-3xl text-emerald-600 mb-1"></i>
+                    <p class="text-xs font-bold text-slate-700">Pilih File Excel / CSV Inbound Restock</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Atau Copy-Paste Langsung dari Excel:</label>
+                    <textarea id="bulkInboundPasteText" rows="4" placeholder="SKU-001&#t;50&#t;SJ-2026/07/01&#t;Restock Pabrik A" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeModalInbound()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="button" onclick="window.processBulkInboundPaste()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm">Proses Restock Bulk</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Modal Opname / Penyesuaian Stok Manual -->
     <div id="modalAdjustment" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
-            <div class="flex items-center justify-between">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between shrink-0">
                 <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-sliders text-amber-600"></i> Opname & Penyesuaian Stok Manual
                 </h3>
                 <button onclick="window.closeModalAdjustment()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             
-            <form id="formAdjustment" onsubmit="window.saveStockAdjustment(event)" class="space-y-3 text-xs">
+            <form id="formAdjustment" onsubmit="window.saveStockAdjustment(event)" class="space-y-3 text-xs overflow-y-auto flex-1 pr-1">
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Pilih Barang yang Disesuaikan *</label>
+                    <label class="font-bold text-slate-700 block mb-1">Cari Barcode / SKU / Nama Produk *</label>
+                    <div class="relative mb-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="adjustSearchInput" oninput="window.filterAdjustSkuOptions()" placeholder="Ketik barcode, SKU, nama barang, atau scan USB Barcode..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
                     <select id="adjustSkuSelect" required onchange="window.handleAdjustSelectChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium">
                     </select>
                 </div>
@@ -605,7 +692,7 @@
 
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
-                        <label class="font-bold text-slate-800">Daftar Item Barang dalam TransaksiIni:</label>
+                        <label class="font-bold text-slate-800">Daftar Item Barang dalam Transaksi Ini:</label>
                         <button type="button" onclick="window.addBlankItemToEditTx()" class="px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-[11px] font-bold border border-blue-200 transition">
                             + Tambah Item
                         </button>
@@ -757,7 +844,7 @@
         </div>
     </div>
 
-    <!-- Modal Modal Export / Cetak Price List Resmi -->
+    <!-- Modal Export / Cetak Price List Resmi -->
     <div id="modalPriceListPrint" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
             <div class="flex items-center justify-between">
@@ -782,7 +869,7 @@
         </div>
     </div>
 
-    <!-- Modals Existing -->
+    <!-- Modal Tambah SKU Baru -->
     <div id="modalAddSKU" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
             <div class="flex items-center justify-between">
@@ -837,6 +924,7 @@
         </div>
     </div>
 
+    <!-- Modal Claim Gimmick -->
     <div id="modalClaimGimmick" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl p-6 space-y-4 animate-fade-in relative">
             <div class="flex items-center justify-between">
@@ -875,6 +963,7 @@
         </div>
     </div>
 
+    <!-- Modal Preview Struk Pembayaran -->
     <div id="modalReceipt" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
             <button onclick="window.closeReceiptModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center text-sm font-bold shadow-sm z-10" title="Tutup Dialog">
@@ -907,6 +996,7 @@
     <div id="printableArea" class="hidden">
     </div>
 
+    <!-- Modal Delete Transaction -->
     <div id="modalDeleteTx" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in text-center">
             <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
@@ -925,6 +1015,7 @@
         </div>
     </div>
 
+    <!-- Modal Config Firebase -->
     <div id="modalFirebase" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
             <div class="flex items-center justify-between">
@@ -944,6 +1035,7 @@
         </div>
     </div>
 
+    <!-- Modal Bulk Excel Upload -->
     <div id="modalBulkExcel" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl p-6 space-y-4 animate-fade-in">
             <div class="flex items-center justify-between">
@@ -977,6 +1069,7 @@
         </div>
     </div>
 
+    <!-- Modal Hapus Semua SKU -->
     <div id="modalDeleteAllSKU" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in text-center">
             <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
@@ -995,6 +1088,7 @@
         </div>
     </div>
 
+    <!-- Modal Riwayat Mutasi Stok -->
     <div id="modalStockMovement" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-4xl p-6 space-y-4 animate-fade-in">
             <div class="flex items-center justify-between">
@@ -1037,6 +1131,7 @@
         </div>
     </div>
 
+    <!-- Modal Form Promo -->
     <div id="modalPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
             <div class="flex items-center justify-between">
@@ -1079,6 +1174,7 @@
         </div>
     </div>
 
+    <!-- Modal Form Threshold Promo -->
     <div id="modalThresholdPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in">
             <div class="flex items-center justify-between">
@@ -1111,6 +1207,7 @@
         </div>
     </div>
 
+    <!-- Modal Scan Kamera -->
     <div id="modalScanner" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in text-center">
             <div class="flex items-center justify-between">
@@ -1154,6 +1251,7 @@
         window.scannerStream = null;
         window.currentReceiptTx = null;
         window.pendingDeleteTxId = null;
+        window.pendingCheckoutMethod = null;
 
         window.spvPin = localStorage.getItem('spv_pin') || '1234';
         window.kasirPin = localStorage.getItem('kasir_pin') || '5678';
@@ -1344,22 +1442,70 @@
         };
 
         window.openModalInbound = function() {
-            const select = document.getElementById('inboundSkuSelect');
-            if (select) {
-                if (!window.products || window.products.length === 0) {
-                    select.innerHTML = '<option value="">-- Belum Ada SKU Terdaftar --</option>';
-                } else {
-                    select.innerHTML = '<option value="">-- Pilih Barang untuk Restock --</option>' + 
-                        window.products.map(p => `<option value="${p.id}">${p.name} (${p.sku}) - Brand: ${p.brand} [Stok: ${p.stock}]</option>`).join('');
-                }
-            }
-            document.getElementById('formInbound').reset();
+            document.getElementById('formInboundSingle').reset();
+            const searchInput = document.getElementById('inboundSearchInput');
+            if (searchInput) searchInput.value = '';
+            
+            window.switchInboundTab('single');
+            window.filterInboundSkuOptions();
             document.getElementById('inboundSkuInfoBox').classList.add('hidden');
             document.getElementById('modalInbound').classList.remove('hidden');
+            setTimeout(() => document.getElementById('inboundSearchInput')?.focus(), 100);
         };
 
         window.closeModalInbound = function() {
             document.getElementById('modalInbound').classList.add('hidden');
+        };
+
+        window.switchInboundTab = function(mode) {
+            const singleTab = document.getElementById('formInboundSingle');
+            const bulkTab = document.getElementById('formInboundBulk');
+            const singleBtn = document.getElementById('inboundTabSingleBtn');
+            const bulkBtn = document.getElementById('inboundTabBulkBtn');
+
+            if (mode === 'single') {
+                singleTab?.classList.remove('hidden');
+                bulkTab?.classList.add('hidden');
+                singleBtn.className = "px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition";
+                bulkBtn.className = "px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+            } else {
+                singleTab?.classList.add('hidden');
+                bulkTab?.classList.remove('hidden');
+                singleBtn.className = "px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+                bulkBtn.className = "px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition";
+            }
+        };
+
+        window.filterInboundSkuOptions = function() {
+            const searchVal = (document.getElementById('inboundSearchInput')?.value || '').toLowerCase().trim();
+            const select = document.getElementById('inboundSkuSelect');
+            if (!select) return;
+
+            if (!window.products || window.products.length === 0) {
+                select.innerHTML = '<option value="">-- Belum Ada SKU Terdaftar --</option>';
+                return;
+            }
+
+            const filtered = window.products.filter(p => 
+                p.name.toLowerCase().includes(searchVal) ||
+                p.sku.toLowerCase().includes(searchVal) ||
+                (p.barcode && p.barcode.toLowerCase().includes(searchVal)) ||
+                p.brand.toLowerCase().includes(searchVal)
+            );
+
+            if (filtered.length === 0) {
+                select.innerHTML = '<option value="">-- Barang Tidak Ditemukan --</option>';
+            } else {
+                select.innerHTML = '<option value="">-- Pilih Barang untuk Restock --</option>' + 
+                    filtered.map(p => `<option value="${p.id}">${p.name} (${p.sku}) [Barcode: ${p.barcode || '-'}] - Brand: ${p.brand} [Stok: ${p.stock}]</option>`).join('');
+
+                // Auto match if exact match on barcode or SKU
+                const exactMatch = filtered.find(p => (p.barcode && p.barcode.toLowerCase() === searchVal) || p.sku.toLowerCase() === searchVal);
+                if (exactMatch) {
+                    select.value = exactMatch.id;
+                    window.handleInboundSelectChange();
+                }
+            }
         };
 
         window.handleInboundSelectChange = function() {
@@ -1371,7 +1517,7 @@
             }
             const product = window.products.find(p => String(p.id) === String(selectVal));
             if (product) {
-                document.getElementById('inboundInfoName').innerText = product.name;
+                document.getElementById('inboundInfoName').innerText = `${product.name} (Barcode: ${product.barcode || '-'})`;
                 document.getElementById('inboundInfoStock').innerText = `Stok Saat Ini: ${product.stock} pcs`;
                 document.getElementById('inboundInfoBrand').innerText = `Brand: ${product.brand} (${product.subsidiary})`;
                 document.getElementById('inboundInfoPrice').innerText = `Harga: Rp ${Number(product.price).toLocaleString('id-ID')}`;
@@ -1379,49 +1525,144 @@
             }
         };
 
-        window.saveInboundStock = function(e) {
-            e.preventDefault();
-            const prodId = document.getElementById('inboundSkuSelect').value;
-            const addedQty = parseInt(document.getElementById('inboundQty').value) || 0;
-            const refNo = document.getElementById('inboundRefNo').value.trim();
-            const notes = document.getElementById('inboundNotes').value.trim() || 'Inbound Restock Supplier';
+        window.handleBulkInboundFileUpload = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-            if (!prodId || addedQty <= 0) {
-                window.showToast('Pilih barang dan isi jumlah restock yang valid!', 'warning');
-                return;
-            }
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-            const product = window.products.find(p => String(p.id) === String(prodId));
-            if (!product) return;
+                    let restockedCount = 0;
+                    let notFoundCount = 0;
 
-            product.stock += addedQty;
-            window.logStockMovement(product.sku, product.name, `+${addedQty}`, product.stock, 'INBOUND_RESTOCK', refNo, notes);
+                    jsonRows.forEach((row, index) => {
+                        if (index === 0 && (String(row[0]).toLowerCase().includes('sku') || String(row[0]).toLowerCase().includes('barcode'))) {
+                            return;
+                        }
+                        if (row && row.length >= 2) {
+                            const identifier = String(row[0] || '').trim().toLowerCase();
+                            const addedQty = parseInt(row[1]) || 0;
+                            const refNo = String(row[2] || '').trim() || 'INBOUND-BULK-EXCEL';
+                            const notes = String(row[3] || '').trim() || 'Import Restock Excel';
+
+                            if (identifier && addedQty > 0) {
+                                const prod = window.products.find(p => 
+                                    (p.sku && p.sku.toLowerCase() === identifier) || 
+                                    (p.barcode && p.barcode.toLowerCase() === identifier)
+                                );
+
+                                if (prod) {
+                                    prod.stock += addedQty;
+                                    window.logStockMovement(prod.sku, prod.name, `+${addedQty}`, prod.stock, 'INBOUND_RESTOCK', refNo, notes);
+                                    restockedCount++;
+                                } else {
+                                    notFoundCount++;
+                                }
+                            }
+                        }
+                    });
+
+                    if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
+                    window.closeModalInbound();
+                    window.renderCatalog();
+                    window.renderMasterTable();
+                    window.showToast(`Berhasil merestock ${restockedCount} SKU dari Excel! (${notFoundCount} SKU tidak ditemukan)`, restockedCount > 0 ? 'info' : 'warning');
+                } catch (err) {
+                    console.error("Bulk inbound excel error:", err);
+                    window.showToast('Gagal membaca file Excel Inbound!', 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        window.processBulkInboundPaste = function() {
+            const text = document.getElementById('bulkInboundPasteText').value.trim();
+            if (!text) return;
+
+            const lines = text.split('\n');
+            let restockedCount = 0;
+
+            lines.forEach(line => {
+                const cols = line.split(/,|\t/).map(c => c.trim());
+                if (cols.length >= 2) {
+                    const identifier = cols[0].toLowerCase();
+                    const addedQty = parseInt(cols[1]) || 0;
+                    const refNo = cols[2] || 'INBOUND-PASTE';
+                    const notes = cols[3] || 'Restock Copy-Paste';
+
+                    if (identifier && addedQty > 0) {
+                        const prod = window.products.find(p => 
+                            (p.sku && p.sku.toLowerCase() === identifier) || 
+                            (p.barcode && p.barcode.toLowerCase() === identifier)
+                        );
+
+                        if (prod) {
+                            prod.stock += addedQty;
+                            window.logStockMovement(prod.sku, prod.name, `+${addedQty}`, prod.stock, 'INBOUND_RESTOCK', refNo, notes);
+                            restockedCount++;
+                        }
+                    }
+                }
+            });
 
             if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
-
             window.closeModalInbound();
             window.renderCatalog();
             window.renderMasterTable();
-            window.showToast(`Restock ${product.name} berhasil +${addedQty} pcs! Stok sekarang: ${product.stock} pcs`, 'info');
+            window.showToast(`Berhasil memproses restock ${restockedCount} SKU!`, 'info');
         };
 
         window.openModalAdjustment = function() {
-            const select = document.getElementById('adjustSkuSelect');
-            if (select) {
-                if (!window.products || window.products.length === 0) {
-                    select.innerHTML = '<option value="">-- Belum Ada SKU Terdaftar --</option>';
-                } else {
-                    select.innerHTML = '<option value="">-- Pilih Barang untuk Opname --</option>' + 
-                        window.products.map(p => `<option value="${p.id}">${p.name} (${p.sku}) - Current: ${p.stock} pcs</option>`).join('');
-                }
-            }
             document.getElementById('formAdjustment').reset();
+            const searchInput = document.getElementById('adjustSearchInput');
+            if (searchInput) searchInput.value = '';
+
+            window.filterAdjustSkuOptions();
             document.getElementById('adjustSkuInfoBox').classList.add('hidden');
             document.getElementById('modalAdjustment').classList.remove('hidden');
+            setTimeout(() => document.getElementById('adjustSearchInput')?.focus(), 100);
         };
 
         window.closeModalAdjustment = function() {
             document.getElementById('modalAdjustment').classList.add('hidden');
+        };
+
+        window.filterAdjustSkuOptions = function() {
+            const searchVal = (document.getElementById('adjustSearchInput')?.value || '').toLowerCase().trim();
+            const select = document.getElementById('adjustSkuSelect');
+            if (!select) return;
+
+            if (!window.products || window.products.length === 0) {
+                select.innerHTML = '<option value="">-- Belum Ada SKU Terdaftar --</option>';
+                return;
+            }
+
+            const filtered = window.products.filter(p => 
+                p.name.toLowerCase().includes(searchVal) ||
+                p.sku.toLowerCase().includes(searchVal) ||
+                (p.barcode && p.barcode.toLowerCase().includes(searchVal)) ||
+                p.brand.toLowerCase().includes(searchVal)
+            );
+
+            if (filtered.length === 0) {
+                select.innerHTML = '<option value="">-- Barang Tidak Ditemukan --</option>';
+            } else {
+                select.innerHTML = '<option value="">-- Pilih Barang untuk Opname --</option>' + 
+                    filtered.map(p => `<option value="${p.id}">${p.name} (${p.sku}) [Barcode: ${p.barcode || '-'}] - Current: ${p.stock} pcs</option>`).join('');
+
+                // Auto match if exact match on barcode or SKU
+                const exactMatch = filtered.find(p => (p.barcode && p.barcode.toLowerCase() === searchVal) || p.sku.toLowerCase() === searchVal);
+                if (exactMatch) {
+                    select.value = exactMatch.id;
+                    window.handleAdjustSelectChange();
+                }
+            }
         };
 
         window.handleAdjustSelectChange = function() {
@@ -1433,7 +1674,7 @@
             }
             const product = window.products.find(p => String(p.id) === String(selectVal));
             if (product) {
-                document.getElementById('adjustInfoName').innerText = product.name;
+                document.getElementById('adjustInfoName').innerText = `${product.name} (Barcode: ${product.barcode || '-'})`;
                 document.getElementById('adjustInfoStock').innerText = `Stok Sistem Saat Ini: ${product.stock} pcs`;
                 document.getElementById('adjustTargetStock').value = product.stock;
                 infoBox.classList.remove('hidden');
@@ -2601,6 +2842,57 @@
                 return;
             }
 
+            window.pendingCheckoutMethod = method;
+
+            const custName = document.getElementById('cartCustomerName')?.value.trim() || 'Umum';
+            document.getElementById('confirmCustomerNameText').innerText = custName;
+            
+            const badgeEl = document.getElementById('confirmPaymentMethodBadge');
+            if (badgeEl) {
+                badgeEl.innerText = method;
+                badgeEl.className = `px-2 py-0.5 rounded font-bold text-white uppercase text-[10px] ${method === 'QRIS' ? 'bg-emerald-600' : method === 'DEBIT' ? 'bg-blue-600' : 'bg-purple-600'}`;
+            }
+
+            let subtotalNormal = 0;
+            let promoDiscounts = 0;
+            const itemsListContainer = document.getElementById('confirmItemsList');
+
+            if (itemsListContainer) {
+                itemsListContainer.innerHTML = window.cart.map(i => {
+                    const itemSub = i.price * i.qty;
+                    const itemDisc = i.discount || 0;
+                    const finalItemTot = Math.max(0, itemSub - itemDisc);
+                    subtotalNormal += itemSub;
+                    promoDiscounts += itemDisc;
+
+                    return `
+                        <div class="flex justify-between items-center text-slate-800">
+                            <div>
+                                <span class="font-bold block">${i.name}</span>
+                                <span class="text-[10px] text-slate-400">${i.qty}x @ Rp ${Number(i.price).toLocaleString('id-ID')} ${itemDisc > 0 ? '(-Rp ' + Number(itemDisc).toLocaleString('id-ID') + ')' : ''}</span>
+                            </div>
+                            <span class="font-bold">Rp ${Number(finalItemTot).toLocaleString('id-ID')}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const manualDiscInput = parseFloat(document.getElementById('cartManualDiscount')?.value) || 0;
+            const totalDiscount = promoDiscounts + manualDiscInput;
+            const grandTotal = Math.max(0, subtotalNormal - totalDiscount);
+
+            document.getElementById('confirmGrandTotalText').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+            document.getElementById('modalConfirmCheckout').classList.remove('hidden');
+        };
+
+        window.closeConfirmCheckoutModal = function() {
+            document.getElementById('modalConfirmCheckout').classList.add('hidden');
+            window.pendingCheckoutMethod = null;
+        };
+
+        window.finalizeCheckout = function() {
+            const method = window.pendingCheckoutMethod || 'QRIS';
+
             let subtotalNormal = 0;
             let promoDiscounts = 0;
             window.cart.forEach(item => {
@@ -2648,6 +2940,7 @@
             const manualDiscEl = document.getElementById('cartManualDiscount');
             if (manualDiscEl) manualDiscEl.value = 0;
 
+            window.closeConfirmCheckoutModal();
             window.renderCart();
             window.renderCatalog();
             window.renderMasterTable();
