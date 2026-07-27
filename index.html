@@ -1339,6 +1339,8 @@
             window.renderCatalog();
             window.renderMasterTable();
             window.renderReports();
+            window.renderPromoList();
+            window.renderThresholdPromoList();
         };
 
         window.openModalInbound = function() {
@@ -2893,12 +2895,10 @@
                             <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase ${pr.type === 'BOGO' ? 'bg-purple-100 text-purple-700' : pr.type === 'B2G1' ? 'bg-blue-100 text-blue-700' : pr.type === 'PAKET_PROMO' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
                                 ${pr.badge || pr.type}
                             </span>
-                            ${window.currentRole === 'SPV' ? `
-                                <div class="flex items-center gap-1.5">
-                                    <button onclick="window.editPromo('${pr.id}')" class="text-slate-400 hover:text-blue-600 text-xs transition p-1" title="Edit Promo"><i class="fa-solid fa-pen"></i></button>
-                                    <button onclick="window.deletePromo('${pr.id}')" class="text-slate-400 hover:text-rose-600 text-xs transition p-1" title="Hapus Promo"><i class="fa-solid fa-trash-can"></i></button>
-                                </div>
-                            ` : ''}
+                            <div class="flex items-center gap-1.5 spv-only ${window.currentRole !== 'SPV' ? 'hidden' : ''}">
+                                <button onclick="window.editPromo('${pr.id}')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Edit Promo"><i class="fa-solid fa-pen text-[10px]"></i> Edit</button>
+                                <button onclick="window.deletePromo('${pr.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs transition" title="Hapus Promo"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
                         </div>
                         <h3 class="font-bold text-sm text-slate-900">${pr.name}</h3>
                         <div class="text-xs text-slate-500 space-y-1">
@@ -2914,8 +2914,12 @@
         };
 
         window.savePromoProgram = function(e) {
-            e.preventDefault();
-            const editId = document.getElementById('promoEditId').value;
+            if (e) e.preventDefault();
+            if (window.currentRole !== 'SPV') {
+                window.showToast('Hanya Supervisor (SPV) yang berhak mengubah program promo!', 'warning');
+                return;
+            }
+            const editId = document.getElementById('promoEditId').value.trim();
             const name = document.getElementById('promoName').value.trim();
             const type = document.getElementById('promoTypeSelect').value;
             const badge = document.getElementById('promoBadgeTag').value.trim();
@@ -2947,10 +2951,18 @@
         };
 
         window.editPromo = function(id) {
+            if (window.currentRole !== 'SPV') {
+                window.showToast('Hanya Supervisor (SPV) yang berhak mengedit promo!', 'warning');
+                return;
+            }
             window.openModalPromo(id);
         };
 
         window.deletePromo = function(id) {
+            if (window.currentRole !== 'SPV') {
+                window.showToast('Hanya Supervisor (SPV) yang berhak menghapus promo!', 'warning');
+                return;
+            }
             window.promos = window.promos.filter(p => String(p.id) !== String(id));
             if (window.firebaseDb) window.firebaseDb.ref('promos').set(window.promos);
             window.renderPromoList();
@@ -2960,20 +2972,23 @@
         };
 
         window.openModalThresholdPromo = function(editId = null) {
-            document.getElementById('thresholdEditId').value = editId || '';
+            const form = document.getElementById('formThresholdPromo');
+            if (form) form.reset();
+
+            const isEdit = typeof editId === 'string' && editId.trim().length > 0;
+            const targetId = isEdit ? editId : '';
+
+            document.getElementById('thresholdEditId').value = targetId;
             const titleEl = document.getElementById('modalThresholdTitle');
-            if (titleEl) titleEl.innerText = editId ? 'Edit Program Minimal Belanja' : 'Tambah Program Minimal Belanja';
+            if (titleEl) titleEl.innerText = isEdit ? 'Edit Program Minimal Belanja' : 'Tambah Program Minimal Belanja';
             
-            const item = editId ? window.thresholdPromos.find(t => String(t.id) === String(editId)) : null;
+            const item = isEdit ? window.thresholdPromos.find(t => String(t.id) === String(targetId)) : null;
 
             if (item) {
                 document.getElementById('thresholdName').value = item.name || '';
                 document.getElementById('thresholdMinAmount').value = item.minAmount || 500000;
                 document.getElementById('thresholdRewardCount').value = item.rewardCount || 1;
                 document.getElementById('thresholdLabel').value = item.label || '';
-            } else {
-                document.getElementById('formThresholdPromo').reset();
-                document.getElementById('thresholdEditId').value = '';
             }
 
             document.getElementById('modalThresholdPromo').classList.remove('hidden');
@@ -2984,8 +2999,12 @@
         };
 
         window.saveThresholdPromo = function(e) {
-            e.preventDefault();
-            const editId = document.getElementById('thresholdEditId').value;
+            if (e) e.preventDefault();
+            if (window.currentRole !== 'SPV') {
+                window.showToast('Hanya Supervisor (SPV) yang berhak mengubah program minimal belanja!', 'warning');
+                return;
+            }
+            const editId = document.getElementById('thresholdEditId').value.trim();
             const name = document.getElementById('thresholdName').value.trim();
             const minAmount = parseFloat(document.getElementById('thresholdMinAmount').value) || 0;
             const rewardCount = parseInt(document.getElementById('thresholdRewardCount').value) || 1;
@@ -3011,6 +3030,10 @@
         };
 
         window.deleteThresholdPromo = function(id) {
+            if (window.currentRole !== 'SPV') {
+                window.showToast('Hanya Supervisor (SPV) yang berhak menghapus program minimal belanja!', 'warning');
+                return;
+            }
             window.thresholdPromos = window.thresholdPromos.filter(t => String(t.id) !== String(id));
             if (window.firebaseDb) window.firebaseDb.ref('thresholdPromos').set(window.thresholdPromos);
             window.renderThresholdPromoList();
@@ -3037,12 +3060,10 @@
                         <p class="text-[11px] text-slate-600">Belanja Min: <b class="text-amber-800">Rp ${Number(t.minAmount).toLocaleString('id-ID')}</b></p>
                         <span class="inline-block text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200 mt-0.5">${t.label || (t.rewardCount + ' Free Bonus Gimmick')}</span>
                     </div>
-                    ${window.currentRole === 'SPV' ? `
-                        <div class="flex items-center gap-1 shrink-0">
-                            <button onclick="window.openModalThresholdPromo('${t.id}')" class="p-1.5 text-slate-400 hover:text-blue-600 transition" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="window.deleteThresholdPromo('${t.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 transition" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
-                        </div>
-                    ` : ''}
+                    <div class="flex items-center gap-1 shrink-0 spv-only ${window.currentRole !== 'SPV' ? 'hidden' : ''}">
+                        <button onclick="window.openModalThresholdPromo('${t.id}')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Edit"><i class="fa-solid fa-pen text-[10px]"></i> Edit</button>
+                        <button onclick="window.deleteThresholdPromo('${t.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs transition" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
                 </div>
             `).join('');
         };
@@ -3443,19 +3464,22 @@
         window.closeModalBulkExcel = () => document.getElementById('modalBulkExcel').classList.add('hidden');
 
         window.openModalPromo = function(editId = null) {
-            document.getElementById('promoEditId').value = editId || '';
+            const form = document.getElementById('formPromo');
+            if (form) form.reset();
+
+            const isEdit = typeof editId === 'string' && editId.trim().length > 0;
+            const targetId = isEdit ? editId : '';
+
+            document.getElementById('promoEditId').value = targetId;
             const titleEl = document.getElementById('modalPromoTitle');
-            if (titleEl) titleEl.innerText = editId ? 'Edit Program Promo' : 'Buat Program Promo Baru';
+            if (titleEl) titleEl.innerText = isEdit ? 'Edit Program Promo' : 'Buat Program Promo Baru';
             
-            const promo = editId ? window.promos.find(p => String(p.id) === String(editId)) : null;
+            const promo = isEdit ? window.promos.find(p => String(p.id) === String(targetId)) : null;
 
             if (promo) {
                 document.getElementById('promoName').value = promo.name || '';
                 document.getElementById('promoTypeSelect').value = promo.type || 'BOGO';
                 document.getElementById('promoBadgeTag').value = promo.badge || '';
-            } else {
-                document.getElementById('formPromo').reset();
-                document.getElementById('promoEditId').value = '';
             }
 
             const container = document.getElementById('promoSKUCheckboxList');
