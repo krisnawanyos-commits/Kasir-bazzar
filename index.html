@@ -162,6 +162,9 @@
         <section id="view-pos" class="tab-content animate-fade-in grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             <div id="catalogMainCol" class="lg:col-span-7 xl:col-span-8 space-y-4">
+                <!-- Highlight Promo & Program Extra Bonus Banner -->
+                <div id="publicPromoHighlightBanner" class="space-y-3"></div>
+
                 <!-- Search & Filters -->
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
                     <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
@@ -202,9 +205,9 @@
 
             <!-- Cart Section (Hidden in Mode UMUM) -->
             <div id="cartSidebarCol" class="lg:col-span-5 xl:col-span-4 cashier-spv-only">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 sticky top-24 overflow-hidden flex flex-col max-h-[calc(100vh-7rem)]">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 sticky top-20 overflow-hidden flex flex-col h-[calc(100vh-6.5rem)] max-h-[780px]">
                     
-                    <div class="p-4 bg-[#0c182b] text-white flex items-center justify-between border-b border-slate-800">
+                    <div class="p-4 bg-[#0c182b] text-white flex items-center justify-between border-b border-slate-800 shrink-0">
                         <div class="flex items-center gap-2 font-bold text-sm">
                             <i class="fa-solid fa-cart-shopping text-blue-400"></i>
                             <span>Keranjang Transaksi</span>
@@ -215,13 +218,13 @@
                         </button>
                     </div>
 
-                    <div id="cartItemsContainer" class="p-4 overflow-y-auto flex-1 space-y-3 min-h-[220px] max-h-[360px] sm:max-h-[420px]">
+                    <div id="cartItemsContainer" class="p-4 overflow-y-auto flex-1 min-h-0 space-y-3">
                     </div>
 
-                    <div id="cartThresholdProgressContainer" class="px-4 py-3 bg-amber-50/90 border-t border-b border-amber-200/80 space-y-1.5 text-xs">
+                    <div id="cartThresholdProgressContainer" class="px-4 py-3 bg-amber-50/90 border-t border-b border-amber-200/80 space-y-1.5 text-xs shrink-0">
                     </div>
 
-                    <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-3">
+                    <div class="p-4 bg-slate-50 border-t border-slate-200 space-y-3 shrink-0">
                         <div class="space-y-1 text-xs">
                             <div class="flex justify-between text-slate-500">
                                 <span>Subtotal Normal:</span>
@@ -873,12 +876,12 @@
     </div>
 
     <div id="modalReceipt" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative">
-            <button onclick="window.closeReceiptModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center text-sm font-bold shadow-sm" title="Tutup Dialog">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
+            <button onclick="window.closeReceiptModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center text-sm font-bold shadow-sm z-10" title="Tutup Dialog">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
-            <div class="text-center space-y-1">
+            <div class="text-center space-y-1 shrink-0">
                 <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
                     <i class="fa-solid fa-circle-check"></i>
                 </div>
@@ -886,10 +889,10 @@
                 <p class="text-xs text-slate-500">Data telah tersimpan di Cloud Database</p>
             </div>
 
-            <div id="receiptPreviewCard" class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-xs space-y-3 font-mono">
+            <div id="receiptPreviewCard" class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-xs space-y-3 font-mono overflow-y-auto flex-1 min-h-0 max-h-[50vh]">
             </div>
 
-            <div class="grid grid-cols-2 gap-2 pt-2">
+            <div class="grid grid-cols-2 gap-2 pt-2 shrink-0">
                 <button onclick="window.printReceipt()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
                     <i class="fa-solid fa-print"></i> Cetak Struk
                 </button>
@@ -1747,12 +1750,103 @@
                 }
             }
 
-            const maxAllowed = unlockedTier ? (parseInt(unlockedTier.rewardCount) || 0) : 0;
+            const maxAllowed = unlockedTier ? (unlockedTier.rewardCount || 0) : 0;
             const remainingQuota = Math.max(0, maxAllowed - currentClaimed);
 
             return {
-                paidSpend, currentClaimed, maxAllowed, remainingQuota, unlockedTier
+                paidSpend,
+                currentClaimed,
+                unlockedTier,
+                maxAllowed,
+                remainingQuota
             };
+        };
+
+        window.scrollPromoHighlight = function(amount) {
+            const container = document.getElementById('publicPromoScrollContainer');
+            if (container) {
+                container.scrollBy({ left: amount, behavior: 'smooth' });
+            }
+        };
+
+        window.renderPublicPromoHighlights = function() {
+            const container = document.getElementById('publicPromoHighlightBanner');
+            if (!container) return;
+
+            const activePromos = window.promos || [];
+            const activeThresholds = window.thresholdPromos || [];
+            const promoProducts = (window.products || []).filter(p => p.promoTag || activePromos.some(pr => pr.skus && pr.skus.includes(p.sku)));
+
+            if (activePromos.length === 0 && activeThresholds.length === 0 && promoProducts.length === 0) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+
+            const thresholdsHTML = activeThresholds.map(t => `
+                <div class="bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white p-3.5 rounded-2xl shadow-sm border border-amber-400/30 flex items-center gap-3 shrink-0 min-w-[260px] sm:min-w-[280px]">
+                    <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shrink-0">
+                        🎁
+                    </div>
+                    <div>
+                        <span class="text-[9px] font-extrabold uppercase bg-white/20 px-2 py-0.5 rounded-full tracking-wider">PROGRAM BONUS BELANJA</span>
+                        <h4 class="font-bold text-xs leading-snug mt-0.5">${t.name}</h4>
+                        <p class="text-[10px] text-amber-100 font-medium">Min. Belanja <b class="text-white">Rp ${Number(t.minAmount).toLocaleString('id-ID')}</b> → <span class="bg-emerald-500/90 px-1.5 py-0.5 rounded text-[9px] font-bold text-white">${t.label || (t.rewardCount + ' Free Bonus')}</span></p>
+                    </div>
+                </div>
+            `).join('');
+
+            const promoItemsHTML = promoProducts.slice(0, 8).map(p => {
+                const linkedPromo = activePromos.find(pr => pr.skus && pr.skus.includes(p.sku));
+                const badge = linkedPromo ? linkedPromo.badge : p.promoTag;
+                return `
+                    <div class="bg-gradient-to-br from-rose-50 to-amber-50 border border-rose-200/80 p-3 rounded-2xl shadow-sm flex items-center justify-between gap-2 shrink-0 min-w-[220px] sm:min-w-[240px]">
+                        <div class="space-y-1">
+                            <span class="inline-block text-[9px] font-extrabold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md border border-rose-200">🔥 ${badge || 'PROMO SPESIAL'}</span>
+                            <h5 class="font-bold text-xs text-slate-900 truncate max-w-[150px]">${p.name}</h5>
+                            <div class="text-[10px] text-slate-500">${p.brand} • <b class="text-blue-700">Rp ${Number(p.price).toLocaleString('id-ID')}</b></div>
+                        </div>
+                        ${window.currentRole !== 'UMUM' ? `
+                            <button onclick="window.addToCart('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} class="w-7 h-7 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center justify-center shrink-0 shadow">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        ` : `
+                            <span class="text-[9px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">Ready</span>
+                        `}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="bg-gradient-to-r from-slate-900 via-[#0c182b] to-slate-900 p-4 rounded-2xl text-white shadow-md space-y-3 border border-slate-800">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-2.5 w-2.5 relative">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                            </span>
+                            <h3 class="font-extrabold text-xs sm:text-sm tracking-tight flex items-center gap-1.5 text-amber-300">
+                                <i class="fa-solid fa-fire text-rose-400"></i> HIGHLIGHT PROMO & PROGRAM EXTRA BONUS BAZAAR
+                            </h3>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="window.scrollPromoHighlight(-220)" class="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xs transition border border-white/10" title="Geser Kiri">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button onclick="window.scrollPromoHighlight(220)" class="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xs transition border border-white/10" title="Geser Kanan">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="publicPromoScrollContainer" class="flex items-center gap-3 overflow-x-auto hide-scrollbar pb-1 pt-0.5 scroll-smooth">
+                        ${thresholdsHTML}
+                        ${promoItemsHTML}
+                    </div>
+                </div>
+            `;
         };
 
         window.logStockMovement = function(sku, productName, qtyChange, finalStock, type, refId = '-', notes = '-') {
@@ -2617,6 +2711,8 @@
         };
 
         window.renderCatalog = function() {
+            window.renderPublicPromoHighlights();
+
             const grid = document.getElementById('catalogGrid');
             if (!grid) return;
 
