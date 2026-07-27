@@ -1155,8 +1155,8 @@
         window.spvPin = localStorage.getItem('spv_pin') || '1234';
         window.kasirPin = localStorage.getItem('kasir_pin') || '5678';
 
-        // Role State: 'SPV', 'KASIR', or 'UMUM'
-        window.currentRole = 'SPV';
+        // Role State: Default to 'UMUM' (Public Price List) on initial load for security
+        window.currentRole = 'UMUM';
 
         window.openRoleModal = function() {
             document.getElementById('modalRole').classList.remove('hidden');
