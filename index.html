@@ -144,9 +144,9 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full">
 
+        <!-- TAB 1: POS / Sheet Kasir -->
         <section id="view-pos" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
             <div id="catalogMainCol" class="lg:col-span-7 xl:col-span-8 space-y-4">
-                <!-- Highlighted Promo Banner -->
                 <div id="publicPromoHighlightBanner" class="space-y-3"></div>
 
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
@@ -164,7 +164,7 @@
                             <i class="fa-solid fa-file-excel"></i> Export Price List
                         </button>
 
-                        <button onclick="window.openPriceListPrintModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-sm" title="Pratinjau & Cetak Katalog">
+                        <button onclick="window.openPriceListPrintModal()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-sm" title="Pratinjau & Cetak Katalog Resmi">
                             <i class="fa-solid fa-print"></i> Cetak Price List
                         </button>
                     </div>
@@ -249,6 +249,7 @@
             </div>
         </section>
 
+        <!-- TAB 2: Program Promo -->
         <section id="view-promo" class="tab-content space-y-6 animate-fade-in hidden">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -257,7 +258,7 @@
                     </h2>
                     <p class="text-xs text-slate-500">Atur skema Buy 1 Get 1 (BOGO), Buy 2 Get 1, Harga Paket Bundling, dan Free Bonus</p>
                 </div>
-                <button onclick="window.openModalPromo()" class="spv-only px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-2">
+                <button onclick="window.openModalPromo()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Buat Program Promo Baru
                 </button>
             </div>
@@ -273,7 +274,7 @@
                         </h3>
                         <p class="text-xs text-slate-500">Atur batas nominal belanja untuk diskon persentase %, potongan Rp, atau klaim item bonus</p>
                     </div>
-                    <button onclick="window.openModalThresholdPromo()" class="spv-only px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+                    <button onclick="window.openModalThresholdPromo()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
                         <i class="fa-solid fa-plus"></i> Tambah Program Minimal Belanja
                     </button>
                 </div>
@@ -283,6 +284,7 @@
             </div>
         </section>
 
+        <!-- TAB 3: Master List SKU -->
         <section id="view-master" class="tab-content space-y-6 animate-fade-in hidden">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -342,6 +344,7 @@
             </div>
         </section>
 
+        <!-- TAB 4: Laporan & Rekapan -->
         <section id="view-report" class="tab-content space-y-6 animate-fade-in hidden">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-1">
@@ -442,7 +445,107 @@
         </section>
     </main>
 
-    <!-- Modal Confirm Checkout -->
+    <!-- Modal Threshold Promo (Fixed Form Controls) -->
+    <div id="modalThresholdPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 id="modalThresholdTitle" class="font-bold text-base text-slate-900">Tambah Program Minimal Belanja</h3>
+                <button onclick="window.closeModalThresholdPromo()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formThresholdPromo" onsubmit="window.saveThresholdPromo(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="thresholdEditId">
+                <div>
+                    <label class="font-bold text-slate-700">Nama Syarat Program *</label>
+                    <input type="text" id="thresholdName" required placeholder="Contoh: Belanja Min 250rb Diskon 10%" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label class="font-bold text-slate-700">Jenis Diskon / Hadiah *</label>
+                    <select id="thresholdTypeSelect" required onchange="window.handleThresholdTypeChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        <option value="PERCENT">Diskon Persentase (%)</option>
+                        <option value="NOMINAL">Diskon Potongan Nominal (Rp)</option>
+                        <option value="GIMMICK">Klaim Free Bonus / Gimmick (Pcs)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700">Minimal Nominal Belanja (Rp) *</label>
+                    <input type="number" id="thresholdMinAmount" required min="1000" step="1000" placeholder="250000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold">
+                </div>
+
+                <div id="thresholdValueContainer">
+                    <label id="thresholdValueLabel" class="font-bold text-slate-700">Nilai Diskon Persentase (%) *</label>
+                    <input type="number" id="thresholdDiscountValue" required min="1" placeholder="10" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700">Catatan Label / Keterangan *</label>
+                    <input type="text" id="thresholdLabel" required placeholder="Contoh: Diskon 10% Otomatis" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeModalThresholdPromo()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">Simpan Program</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Promo Builder -->
+    <div id="modalPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 id="modalPromoTitle" class="font-bold text-base text-slate-900">Buat Program Promo Baru</h3>
+                <button onclick="window.closeModalPromo()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formPromo" onsubmit="window.savePromoProgram(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="promoEditId">
+                <div>
+                    <label class="font-bold text-slate-700">Nama Program Promo *</label>
+                    <input type="text" id="promoName" required placeholder="Contoh: Promo Buy 2 Get 2 Boncept" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="font-bold text-slate-700">Mekanisme Promo *</label>
+                        <select id="promoTypeSelect" required onchange="window.handlePromoTypeChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium">
+                            <option value="PAKET_PROMO">Set Harga Paket Bundling</option>
+                            <option value="BOGO">Buy 1 Get 1 / B2G2 (Free Pairs)</option>
+                            <option value="B2G1">Buy 2 Get 1 Free</option>
+                            <option value="GIMMICK">Free Bonus / Gimmick (Rp 0)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700">Badge Tag Promo *</label>
+                        <input type="text" id="promoBadgeTag" required placeholder="Contoh: BUY 2 GET 2 23,400" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div id="promoPaketConfigContainer" class="grid grid-cols-2 gap-2 p-3 bg-purple-50 border border-purple-200 rounded-xl transition">
+                    <div>
+                        <label class="font-bold text-purple-900 block mb-1">Isi Pcs per Paket *</label>
+                        <input type="number" id="promoBundleQty" min="1" value="4" placeholder="4" class="w-full p-2 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-900 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="font-bold text-purple-900 block mb-1">Harga 1 Paket (Rp) *</label>
+                        <input type="number" id="promoBundlePrice" min="0" value="23400" placeholder="23400" class="w-full p-2 bg-white border border-purple-300 rounded-lg text-xs font-bold text-purple-900 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">Pilih SKU Barang yang Ikut Promo:</label>
+                    <div id="promoSKUCheckboxList" class="max-h-40 overflow-y-auto p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeModalPromo()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm">Simpan Program Promo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Other Modals: Confirm Checkout, Role, PINs, Receipt, Scanner, Inbound, etc. -->
     <div id="modalConfirmCheckout" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
             <div class="flex items-center justify-between">
@@ -451,123 +554,20 @@
                 </h3>
                 <button onclick="window.closeConfirmCheckoutModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs space-y-1">
-                <div class="flex justify-between font-semibold text-slate-700">
-                    <span>Metode Pembayaran:</span>
-                    <span id="confirmPaymentMethodBadge" class="px-2 py-0.5 rounded font-bold bg-blue-600 text-white uppercase text-[10px]">QRIS</span>
-                </div>
-                <div class="flex justify-between font-semibold text-slate-700">
-                    <span>Nama Pembeli / Dept:</span>
-                    <span id="confirmCustomerNameText" class="font-bold text-slate-900">Umum</span>
-                </div>
+                <div class="flex justify-between font-semibold text-slate-700"><span>Metode:</span><span id="confirmPaymentMethodBadge" class="px-2 py-0.5 rounded font-bold bg-blue-600 text-white uppercase text-[10px]">QRIS</span></div>
+                <div class="flex justify-between font-semibold text-slate-700"><span>Pembeli:</span><span id="confirmCustomerNameText" class="font-bold text-slate-900">Umum</span></div>
             </div>
-
             <div class="flex-1 overflow-y-auto space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 max-h-48 text-xs">
-                <span class="font-bold text-slate-600 block border-b border-slate-200 pb-1 mb-1">Detail Item Ringkasan:</span>
-                <div id="confirmItemsList" class="space-y-1.5">
-                </div>
+                <div id="confirmItemsList" class="space-y-1.5"></div>
             </div>
-
             <div class="bg-slate-100 p-3 rounded-xl flex items-center justify-between text-xs">
-                <span class="font-bold text-slate-700">Total Yang Harus Dibayar:</span>
+                <span class="font-bold text-slate-700">Total Bayar:</span>
                 <span id="confirmGrandTotalText" class="text-lg font-extrabold text-blue-700">Rp 0</span>
             </div>
-
             <div class="grid grid-cols-2 gap-2 pt-2">
-                <button type="button" onclick="window.closeConfirmCheckoutModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
-                    Batal / Edit Keranjang
-                </button>
-                <button type="button" onclick="window.finalizeCheckout()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-check text-sm"></i> Konfirmasi & Bayar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Inbound -->
-    <div id="modalInbound" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl p-6 space-y-4 animate-fade-in max-h-[90vh] flex flex-col">
-            <div class="flex items-center justify-between shrink-0">
-                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
-                    <i class="fa-solid fa-boxes-packing text-emerald-600"></i> Restock / Inbound Barang Masuk
-                </h3>
-                <button onclick="window.closeModalInbound()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            
-            <div class="flex items-center gap-2 border-b border-slate-200 pb-2 shrink-0 text-xs font-bold">
-                <button id="inboundTabSingleBtn" onclick="window.switchInboundTab('single')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition">
-                    <i class="fa-solid fa-barcode"></i> Input Restock Per-SKU
-                </button>
-                <button id="inboundTabBulkBtn" onclick="window.switchInboundTab('bulk')" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
-                    <i class="fa-solid fa-file-excel text-emerald-600"></i> Upload Bulk Inbound (Excel/CSV)
-                </button>
-            </div>
-
-            <form id="formInboundSingle" onsubmit="window.saveInboundStock(event)" class="space-y-3 text-xs overflow-y-auto flex-1 pr-1">
-                <div>
-                    <label class="font-bold text-slate-700 block mb-1">Cari Barcode / SKU / Nama Produk *</label>
-                    <div class="relative mb-2">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" id="inboundSearchInput" oninput="window.filterInboundSkuOptions()" placeholder="Ketik barcode, SKU, nama barang..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                    <select id="inboundSkuSelect" required onchange="window.handleInboundSelectChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium">
-                    </select>
-                </div>
-
-                <div id="inboundSkuInfoBox" class="p-3 bg-slate-100 rounded-xl border border-slate-200 hidden space-y-1">
-                    <div class="flex justify-between text-slate-700 font-bold">
-                        <span id="inboundInfoName">-</span>
-                        <span id="inboundInfoStock" class="text-emerald-700">Stok Saat Ini: 0 pcs</span>
-                    </div>
-                    <div class="text-[10px] text-slate-500 flex gap-2">
-                        <span id="inboundInfoBrand">Brand: -</span> • <span id="inboundInfoPrice">Harga: Rp 0</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="font-bold text-slate-700">Jumlah Restock Masuk (+ Pcs) *</label>
-                        <input type="number" id="inboundQty" required min="1" placeholder="50" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="font-bold text-slate-700">No. Surat Jalan / Referensi *</label>
-                        <input type="text" id="inboundRefNo" required placeholder="SJ-2026/07/01" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="font-bold text-slate-700">Catatan Restock / Suplier (Opsional)</label>
-                    <input type="text" id="inboundNotes" placeholder="Restock Suplier A / Kiriman Gudang Utama" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                </div>
-
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="window.closeModalInbound()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm">Simpan Restock Stok</button>
-                </div>
-            </form>
-
-            <div id="formInboundBulk" class="space-y-3 text-xs overflow-y-auto flex-1 pr-1 hidden">
-                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                    <span class="font-bold text-emerald-900">Format File Excel / CSV Restock:</span>
-                    <p class="text-emerald-800 text-[11px]">Kolom 1: <b>Barcode / SKU</b> | Kolom 2: <b>Jumlah Restock</b> | Kolom 3: <b>No. Surat Jalan</b> | Kolom 4: <b>Catatan</b></p>
-                </div>
-
-                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-emerald-500 transition cursor-pointer relative bg-slate-50">
-                    <input type="file" accept=".xlsx, .xls, .csv" onchange="window.handleBulkInboundFileUpload(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <i class="fa-solid fa-file-excel text-3xl text-emerald-600 mb-1"></i>
-                    <p class="text-xs font-bold text-slate-700">Pilih File Excel / CSV Inbound Restock</p>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Atau Copy-Paste Langsung dari Excel:</label>
-                    <textarea id="bulkInboundPasteText" rows="4" placeholder="SKU-001&#t;50&#t;SJ-2026/07/01&#t;Restock Pabrik A" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
-                </div>
-
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="window.closeModalInbound()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
-                    <button type="button" onclick="window.processBulkInboundPaste()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm">Proses Restock Bulk</button>
-                </div>
+                <button type="button" onclick="window.closeConfirmCheckoutModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Batal</button>
+                <button type="button" onclick="window.finalizeCheckout()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md">Konfirmasi & Bayar</button>
             </div>
         </div>
     </div>
@@ -581,114 +581,78 @@
                 </h3>
                 <button onclick="window.closeRoleModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-
             <div class="space-y-2.5 text-xs">
                 <button onclick="window.switchRole('SPV')" class="w-full p-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl text-left flex items-center justify-between transition">
                     <div>
                         <div class="font-extrabold text-amber-900 flex items-center gap-1.5">
                             <span>👑 Supervisor / Admin (Full Access)</span>
-                            <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded-md font-bold">🔒 Locked</span>
+                            <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded-md font-bold">🔒 PIN</span>
                         </div>
-                        <div class="text-[11px] text-amber-700">Inbound stok, edit/void transaksi, hapus SKU, & config. (Memerlukan PIN SPV)</div>
+                        <div class="text-[11px] text-amber-700">Inbound stok, edit/void transaksi, hapus SKU, & promo.</div>
                     </div>
-                    <i class="fa-solid fa-lock text-amber-500"></i>
                 </button>
-
                 <button onclick="window.switchRole('KASIR')" class="w-full p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl text-left flex items-center justify-between transition">
                     <div>
                         <div class="font-extrabold text-blue-900 flex items-center gap-1.5">
                             <span>💳 Mode Kasir (Sales & POS)</span>
-                            <span class="text-[9px] bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded-md font-bold">🔒 Locked</span>
+                            <span class="text-[9px] bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded-md font-bold">🔒 PIN</span>
                         </div>
-                        <div class="text-[11px] text-blue-700">Akses kasir, scan barcode, checkout & lihat promo. (Memerlukan PIN Kasir)</div>
+                        <div class="text-[11px] text-blue-700">Akses keranjang, checkout & lihat promo.</div>
                     </div>
-                    <i class="fa-solid fa-lock text-blue-500"></i>
                 </button>
-
                 <button onclick="window.switchRole('UMUM')" class="w-full p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-left flex items-center justify-between transition">
                     <div>
                         <div class="font-extrabold text-emerald-900">👁️ Mode Umum / Public Price List</div>
-                        <div class="text-[11px] text-emerald-700">Hanya melihat katalog barang, harga jual & export price list.</div>
+                        <div class="text-[11px] text-emerald-700">Melihat katalog barang & export price list.</div>
                     </div>
-                    <i class="fa-solid fa-chevron-right text-emerald-500"></i>
                 </button>
             </div>
-            
             <div class="flex justify-end pt-2">
                 <button onclick="window.closeRoleModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Tutup</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal SPV PIN -->
+    <!-- PIN Modals -->
     <div id="modalSpvPin" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 space-y-4 animate-fade-in text-center">
-            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <div>
-                <h3 class="font-bold text-base text-slate-900">Masukkan PIN / Password SPV</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Mode Supervisor memerlukan otentikasi password (Default: 1234).</p>
-            </div>
+            <h3 class="font-bold text-base text-slate-900">Masukkan PIN Supervisor</h3>
             <form onsubmit="window.verifySpvPin(event)" class="space-y-3 text-xs">
-                <div>
-                    <input type="password" id="inputSpvPin" required placeholder="Masukkan PIN SPV" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-base font-bold text-slate-800 tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none">
-                </div>
-                <div class="flex items-center justify-center gap-2 pt-1">
-                    <button type="button" onclick="window.closeSpvPinModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
-                    <button type="submit" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">Verifikasi PIN</button>
+                <input type="password" id="inputSpvPin" required placeholder="PIN SPV (Default: 1234)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-base font-bold tracking-widest">
+                <div class="flex justify-center gap-2">
+                    <button type="button" onclick="window.closeSpvPinModal()" class="w-1/2 py-2.5 bg-slate-100 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-amber-500 text-white font-bold rounded-xl shadow-sm">Verifikasi</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Kasir PIN -->
     <div id="modalKasirPin" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 space-y-4 animate-fade-in text-center">
-            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
-                <i class="fa-solid fa-cash-register"></i>
-            </div>
-            <div>
-                <h3 class="font-bold text-base text-slate-900">Masukkan PIN Kasir</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Mode Kasir memerlukan PIN akses (Default: 5678).</p>
-            </div>
+            <h3 class="font-bold text-base text-slate-900">Masukkan PIN Kasir</h3>
             <form onsubmit="window.verifyKasirPin(event)" class="space-y-3 text-xs">
-                <div>
-                    <input type="password" id="inputKasirPin" required placeholder="Masukkan PIN Kasir" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-base font-bold text-slate-800 tracking-widest focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                </div>
-                <div class="flex items-center justify-center gap-2 pt-1">
-                    <button type="button" onclick="window.closeKasirPinModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
-                    <button type="submit" class="w-1/2 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm">Verifikasi PIN</button>
+                <input type="password" id="inputKasirPin" required placeholder="PIN Kasir (Default: 5678)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-base font-bold tracking-widest">
+                <div class="flex justify-center gap-2">
+                    <button type="button" onclick="window.closeKasirPinModal()" class="w-1/2 py-2.5 bg-slate-100 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-sm">Verifikasi</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Receipt / Struk Bon -->
+    <!-- Receipt / Struk Modal -->
     <div id="modalReceipt" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
-            <button onclick="window.closeReceiptModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center text-sm font-bold shadow-sm z-10" title="Tutup Dialog">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-
+            <button onclick="window.closeReceiptModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm font-bold shadow-sm z-10"><i class="fa-solid fa-xmark"></i></button>
             <div class="text-center space-y-1 shrink-0">
-                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
-                    <i class="fa-solid fa-receipt"></i>
-                </div>
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold"><i class="fa-solid fa-receipt"></i></div>
                 <h3 class="font-extrabold text-lg text-slate-900">Struk / Bon Transaksi</h3>
                 <p class="text-xs text-slate-500">Bukti Pembayaran Resmi Bazaar AnyMind</p>
             </div>
-
-            <div id="receiptPreviewCard" class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-xs space-y-3 font-mono overflow-y-auto flex-1 min-h-0 max-h-[50vh]">
-            </div>
-
+            <div id="receiptPreviewCard" class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-xs space-y-3 font-mono overflow-y-auto flex-1 min-h-0 max-h-[50vh]"></div>
             <div class="grid grid-cols-2 gap-2 pt-2 shrink-0">
-                <button onclick="window.printReceipt()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-print"></i> Cetak Struk
-                </button>
-                <button onclick="window.closeReceiptModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
-                    Tutup Preview
-                </button>
+                <button onclick="window.printReceipt()" class="py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-center gap-1.5"><i class="fa-solid fa-print"></i> Cetak Struk</button>
+                <button onclick="window.closeReceiptModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Tutup Preview</button>
             </div>
         </div>
     </div>
@@ -725,7 +689,7 @@
             { id: 'PROMO-B2G2', name: 'Promo Buy 2 Get 2 Boncept', type: 'PAKET_PROMO', badge: 'BUY 2 GET 2', bundleQty: 4, bundlePrice: 23400, skus: ['SKU-BON-01', 'SKU-BON-02'] }
         ];
 
-        // Safely Load and Merge Local History without Resetting
+        // Safely Load and Merge Local Datasets
         const rawLocalProducts = localStorage.getItem('bazaar_products');
         window.products = rawLocalProducts ? window.normalizeArray(JSON.parse(rawLocalProducts)) : INITIAL_PRODUCTS;
 
@@ -746,7 +710,7 @@
         const rawLocalThres = localStorage.getItem('bazaar_thresholds');
         window.thresholdPromos = rawLocalThres ? window.normalizeArray(JSON.parse(rawLocalThres)) : [
             { id: 'THRES-250K', name: 'Min. Belanja 250 Ribu', type: 'PERCENT', minAmount: 250000, value: 10, label: 'Diskon 10% Otomatis' },
-            { id: 'THRES-500K', name: 'Min. Belanja 500 Ribu', type: 'GIMMICK', minAmount: 500000, value: 1, label: 'Klaim 1 Pcs Free Bonus' }
+            { id: 'THRES-500K', name: 'Min. Belanja 500 Ribu', type: 'GIMMICK', minAmount: 500000, value: 1, rewardCount: 1, label: 'Klaim 1 Pcs Free Bonus' }
         ];
 
         window.cart = [];
@@ -1446,6 +1410,10 @@
         };
 
         window.openModalPromo = function() {
+            if (window.currentRole !== 'SPV') {
+                document.getElementById('modalSpvPin')?.classList.remove('hidden');
+                return;
+            }
             document.getElementById('formPromo')?.reset();
             document.getElementById('promoEditId').value = '';
             const title = document.getElementById('modalPromoTitle');
@@ -1478,6 +1446,10 @@
         };
 
         window.editPromo = function(id) {
+            if (window.currentRole !== 'SPV') {
+                document.getElementById('modalSpvPin')?.classList.remove('hidden');
+                return;
+            }
             const promos = window.normalizeArray(window.promos);
             const promo = promos.find(p => String(p.id) === String(id));
             if (!promo) return;
@@ -1514,15 +1486,15 @@
 
         window.savePromoProgram = function(e) {
             e.preventDefault();
-            const name = document.getElementById('promoName').value.trim();
-            const type = document.getElementById('promoTypeSelect').value;
-            const badge = document.getElementById('promoBadgeTag').value.trim();
-            const bundleQty = parseInt(document.getElementById('promoBundleQty').value) || 1;
-            const bundlePrice = parseFloat(document.getElementById('promoBundlePrice').value) || 0;
+            const name = document.getElementById('promoName')?.value.trim();
+            const type = document.getElementById('promoTypeSelect')?.value;
+            const badge = document.getElementById('promoBadgeTag')?.value.trim();
+            const bundleQty = parseInt(document.getElementById('promoBundleQty')?.value) || 1;
+            const bundlePrice = parseFloat(document.getElementById('promoBundlePrice')?.value) || 0;
 
             const selectedSKUs = Array.from(document.querySelectorAll('input[name="promoSKUs"]:checked')).map(cb => cb.value);
 
-            const editId = document.getElementById('promoEditId').value;
+            const editId = document.getElementById('promoEditId')?.value;
             if (editId) {
                 const target = window.promos.find(p => String(p.id) === String(editId));
                 if (target) {
@@ -1553,7 +1525,10 @@
         };
 
         window.deletePromo = function(id) {
-            if (window.currentRole !== 'SPV') return;
+            if (window.currentRole !== 'SPV') {
+                document.getElementById('modalSpvPin')?.classList.remove('hidden');
+                return;
+            }
             window.promos = window.promos.filter(p => String(p.id) !== String(id));
             localStorage.setItem('bazaar_promos', JSON.stringify(window.promos));
             if (window.firebaseDb) window.firebaseDb.ref('promos').set(window.promos);
@@ -1584,7 +1559,7 @@
                     <div class="space-y-1">
                         <div class="flex items-center justify-between">
                             <span class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-extrabold uppercase">${p.badge}</span>
-                            <div class="flex items-center gap-1.5 spv-only">
+                            <div class="flex items-center gap-1.5">
                                 <button onclick="window.editPromo('${p.id}')" class="text-slate-400 hover:text-blue-600 transition text-xs p-1" title="Edit Promo"><i class="fa-solid fa-pen"></i></button>
                                 <button onclick="window.deletePromo('${p.id}')" class="text-slate-400 hover:text-rose-600 transition text-xs p-1" title="Hapus Promo"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
@@ -1604,9 +1579,14 @@
         };
 
         window.openModalThresholdPromo = function() {
+            if (window.currentRole !== 'SPV') {
+                document.getElementById('modalSpvPin')?.classList.remove('hidden');
+                return;
+            }
             document.getElementById('formThresholdPromo')?.reset();
             document.getElementById('thresholdEditId').value = '';
-            document.getElementById('thresholdTypeSelect').value = 'PERCENT';
+            const typeSelect = document.getElementById('thresholdTypeSelect');
+            if (typeSelect) typeSelect.value = 'PERCENT';
             window.handleThresholdTypeChange();
             const title = document.getElementById('modalThresholdTitle');
             if (title) title.innerText = 'Tambah Program Minimal Belanja';
@@ -1644,17 +1624,23 @@
         };
 
         window.editThresholdPromo = function(id) {
+            if (window.currentRole !== 'SPV') {
+                document.getElementById('modalSpvPin')?.classList.remove('hidden');
+                return;
+            }
             const thresholds = window.normalizeArray(window.thresholdPromos);
             const threshold = thresholds.find(t => String(t.id) === String(id));
             if (!threshold) return;
 
             document.getElementById('thresholdEditId').value = threshold.id;
             document.getElementById('thresholdName').value = threshold.name || '';
-            document.getElementById('thresholdTypeSelect').value = threshold.type || 'PERCENT';
+            const typeSelect = document.getElementById('thresholdTypeSelect');
+            if (typeSelect) typeSelect.value = threshold.type || 'PERCENT';
             window.handleThresholdTypeChange();
 
             document.getElementById('thresholdMinAmount').value = threshold.minAmount || 0;
-            document.getElementById('thresholdDiscountValue').value = threshold.value || threshold.rewardCount || 0;
+            const valInput = document.getElementById('thresholdDiscountValue');
+            if (valInput) valInput.value = threshold.value || threshold.rewardCount || 0;
             document.getElementById('thresholdLabel').value = threshold.label || '';
 
             const title = document.getElementById('modalThresholdTitle');
@@ -1665,12 +1651,12 @@
 
         window.saveThresholdPromo = function(e) {
             e.preventDefault();
-            const name = document.getElementById('thresholdName').value.trim();
-            const type = document.getElementById('thresholdTypeSelect').value;
-            const minAmount = parseFloat(document.getElementById('thresholdMinAmount').value) || 0;
-            const value = parseFloat(document.getElementById('thresholdDiscountValue').value) || 0;
-            const label = document.getElementById('thresholdLabel').value.trim();
-            const editId = document.getElementById('thresholdEditId').value;
+            const name = document.getElementById('thresholdName')?.value.trim();
+            const type = document.getElementById('thresholdTypeSelect')?.value || 'PERCENT';
+            const minAmount = parseFloat(document.getElementById('thresholdMinAmount')?.value) || 0;
+            const value = parseFloat(document.getElementById('thresholdDiscountValue')?.value) || 0;
+            const label = document.getElementById('thresholdLabel')?.value.trim();
+            const editId = document.getElementById('thresholdEditId')?.value;
 
             if (editId) {
                 const target = window.thresholdPromos.find(t => String(t.id) === String(editId));
@@ -1699,7 +1685,10 @@
         };
 
         window.deleteThresholdPromo = function(id) {
-            if (window.currentRole !== 'SPV') return;
+            if (window.currentRole !== 'SPV') {
+                document.getElementById('modalSpvPin')?.classList.remove('hidden');
+                return;
+            }
             window.thresholdPromos = window.thresholdPromos.filter(t => String(t.id) !== String(id));
             localStorage.setItem('bazaar_thresholds', JSON.stringify(window.thresholdPromos));
             if (window.firebaseDb) window.firebaseDb.ref('thresholds').set(window.thresholdPromos);
@@ -1725,7 +1714,7 @@
                             Min. Rp ${Number(t.minAmount).toLocaleString('id-ID')} → ${t.label}
                         </div>
                     </div>
-                    <div class="flex items-center gap-1.5 spv-only shrink-0">
+                    <div class="flex items-center gap-1.5 shrink-0">
                         <button onclick="window.editThresholdPromo('${t.id}')" class="text-amber-700 hover:text-blue-600 text-xs p-1" title="Edit Program"><i class="fa-solid fa-pen"></i></button>
                         <button onclick="window.deleteThresholdPromo('${t.id}')" class="text-amber-700 hover:text-rose-600 text-xs p-1" title="Hapus Program"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
@@ -1736,7 +1725,8 @@
         };
 
         window.openClaimGimmickModal = function(quota) {
-            document.getElementById('gimmickQuotaBadgeModal').innerText = `Sisa Kuota: ${quota} Pcs`;
+            const badge = document.getElementById('gimmickQuotaBadgeModal');
+            if (badge) badge.innerText = `Sisa Kuota: ${quota} Pcs`;
             window.renderGimmickPickerList();
             document.getElementById('modalClaimGimmick')?.classList.remove('hidden');
         };
@@ -1989,7 +1979,7 @@
                 `).join('');
             }
 
-            // Transaction log table with clickable receipt/bon preview buttons
+            // Transaction log table with clickable receipt preview buttons
             const txTbody = document.getElementById('transactionLogBody');
             if (txTbody) {
                 if (txList.length === 0) {
