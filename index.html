@@ -3204,7 +3204,7 @@
                 const promoTag = String(r[7] || '').trim();
 
                 if (sku && name) {
-                    const existing = prods.find(p => String(p.sku).toLowerCase() === sku.toLowerCase());
+                    const existing = prods.find(p => String(p.sku || '').toLowerCase() === sku.toLowerCase());
                     if (existing) {
                         existing.barcode = barcode || existing.barcode;
                         existing.brand = brand || existing.brand;
