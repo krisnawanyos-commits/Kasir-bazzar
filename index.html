@@ -60,6 +60,7 @@
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
+    <!-- Header Bar -->
     <header class="bg-[#0c182b] text-white sticky top-0 z-30 shadow-xl border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
@@ -424,16 +425,47 @@
                         <i class="fa-solid fa-download text-emerald-400"></i> Export Laporan CSV
                     </button>
                 </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
                             <tr>
-                                <th class="p-3">Waktu</th>
-                                <th class="p-3">ID Transaksi / Bon</th>
-                                <th class="p-3">Metode</th>
-                                <th class="p-3">Items Purchased</th>
-                                <th class="p-3">Pembeli</th>
-                                <th class="p-3 text-right">Total Bayar</th>
+                                <th class="p-3 cursor-pointer hover:bg-slate-100 transition select-none" onclick="window.setTxSort('date')">
+                                    <div class="flex items-center gap-1.5">
+                                        <span>Waktu</span>
+                                        <span id="sort-icon-date" class="text-blue-600 font-mono">▼</span>
+                                    </div>
+                                </th>
+                                <th class="p-3 cursor-pointer hover:bg-slate-100 transition select-none" onclick="window.setTxSort('id')">
+                                    <div class="flex items-center gap-1.5">
+                                        <span>ID Transaksi / Bon</span>
+                                        <span id="sort-icon-id" class="text-slate-400 font-mono">⇅</span>
+                                    </div>
+                                </th>
+                                <th class="p-3 cursor-pointer hover:bg-slate-100 transition select-none" onclick="window.setTxSort('method')">
+                                    <div class="flex items-center gap-1.5">
+                                        <span>Metode</span>
+                                        <span id="sort-icon-method" class="text-slate-400 font-mono">⇅</span>
+                                    </div>
+                                </th>
+                                <th class="p-3 cursor-pointer hover:bg-slate-100 transition select-none" onclick="window.setTxSort('items')">
+                                    <div class="flex items-center gap-1.5">
+                                        <span>Items Purchased</span>
+                                        <span id="sort-icon-items" class="text-slate-400 font-mono">⇅</span>
+                                    </div>
+                                </th>
+                                <th class="p-3 cursor-pointer hover:bg-slate-100 transition select-none" onclick="window.setTxSort('customer')">
+                                    <div class="flex items-center gap-1.5">
+                                        <span>Pembeli</span>
+                                        <span id="sort-icon-customer" class="text-slate-400 font-mono">⇅</span>
+                                    </div>
+                                </th>
+                                <th class="p-3 text-right cursor-pointer hover:bg-slate-100 transition select-none" onclick="window.setTxSort('total')">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <span>Total Bayar</span>
+                                        <span id="sort-icon-total" class="text-slate-400 font-mono">⇅</span>
+                                    </div>
+                                </th>
                                 <th class="p-3 text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -445,7 +477,9 @@
         </section>
     </main>
 
-    <!-- Modal Threshold Promo (Fixed Form Controls) -->
+    <!-- Modals Section -->
+    
+    <!-- Modal Threshold Promo -->
     <div id="modalThresholdPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in">
             <div class="flex items-center justify-between">
@@ -486,6 +520,39 @@
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="window.closeModalThresholdPromo()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">Simpan Program</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Change PIN -->
+    <div id="modalChangePin" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-sm p-6 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-600"></i> Ubah Password / PIN Akses
+                </h3>
+                <button onclick="window.closeChangePinModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="window.saveNewPin(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">Pilih PIN yang Ingin Diubah *</label>
+                    <select id="pinTargetSelect" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        <option value="SPV">👑 PIN Supervisor (SPV)</option>
+                        <option value="KASIR">💳 PIN Kasir</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">PIN SPV Saat Ini (Verifikasi) *</label>
+                    <input type="password" id="oldPinInput" required placeholder="Masukkan PIN SPV Saat Ini" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">PIN Baru *</label>
+                    <input type="password" id="newPinInput" required placeholder="Masukkan PIN Baru" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeChangePinModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">Simpan PIN Baru</button>
                 </div>
             </form>
         </div>
@@ -545,7 +612,7 @@
         </div>
     </div>
 
-    <!-- Other Modals: Confirm Checkout, Role, PINs, Receipt, Scanner, Inbound, etc. -->
+    <!-- Modal Confirm Checkout -->
     <div id="modalConfirmCheckout" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
             <div class="flex items-center justify-between">
@@ -640,6 +707,261 @@
         </div>
     </div>
 
+    <!-- Modal Inbound Stock -->
+    <div id="modalInbound" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl p-6 space-y-4 animate-fade-in max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between shrink-0">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-boxes-packing text-emerald-600"></i> Restock / Inbound Barang Masuk
+                </h3>
+                <button onclick="window.closeModalInbound()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="flex items-center gap-2 border-b border-slate-200 pb-2 shrink-0 text-xs font-bold">
+                <button id="inboundTabSingleBtn" onclick="window.switchInboundTab('single')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition">
+                    <i class="fa-solid fa-barcode"></i> Input Restock Per-SKU
+                </button>
+                <button id="inboundTabBulkBtn" onclick="window.switchInboundTab('bulk')" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-file-excel text-emerald-600"></i> Upload Bulk Inbound (Excel/CSV)
+                </button>
+            </div>
+
+            <form id="formInboundSingle" onsubmit="window.saveInboundStock(event)" class="space-y-3 text-xs overflow-y-auto flex-1 pr-1">
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">Cari Barcode / SKU / Nama Produk *</label>
+                    <div class="relative mb-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="inboundSearchInput" oninput="window.filterInboundSkuOptions()" placeholder="Ketik barcode, SKU, nama barang, atau scan USB Barcode..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <select id="inboundSkuSelect" required onchange="window.handleInboundSelectChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium">
+                    </select>
+                </div>
+
+                <div id="inboundSkuInfoBox" class="p-3 bg-slate-100 rounded-xl border border-slate-200 hidden space-y-1">
+                    <div class="flex justify-between text-slate-700 font-bold">
+                        <span id="inboundInfoName">-</span>
+                        <span id="inboundInfoStock" class="text-emerald-700">Stok Saat Ini: 0 pcs</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="font-bold text-slate-700">Jumlah Restock Masuk (+ Pcs) *</label>
+                        <input type="number" id="inboundQty" required min="1" placeholder="50" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700">No. Surat Jalan / Referensi *</label>
+                        <input type="text" id="inboundRefNo" required placeholder="SJ-2026/07/01" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700">Catatan Restock / Supplier (Opsional)</label>
+                    <input type="text" id="inboundNotes" placeholder="Restock Supplier A / Kiriman Gudang Utama" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeModalInbound()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm">Simpan Restock Stok</button>
+                </div>
+            </form>
+
+            <div id="formInboundBulk" class="space-y-3 text-xs overflow-y-auto flex-1 pr-1 hidden">
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+                    <span class="font-bold text-emerald-900">Format File Excel / CSV Restock:</span>
+                    <p class="text-emerald-800 text-[11px]">Kolom 1: <b>Barcode / SKU</b> | Kolom 2: <b>Jumlah Restock (+Pcs)</b> | Kolom 3: <b>No. Surat Jalan</b> | Kolom 4: <b>Catatan</b></p>
+                </div>
+
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-emerald-500 transition cursor-pointer relative bg-slate-50">
+                    <input type="file" accept=".xlsx, .xls, .csv" onchange="window.handleBulkInboundFileUpload(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <i class="fa-solid fa-file-excel text-3xl text-emerald-600 mb-1"></i>
+                    <p class="text-xs font-bold text-slate-700">Pilih File Excel / CSV Inbound Restock</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Atau Copy-Paste Langsung dari Excel:</label>
+                    <textarea id="bulkInboundPasteText" rows="4" placeholder="SKU-001&#9;50&#9;SJ-2026/07/01&#9;Restock Pabrik A" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeModalInbound()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="button" onclick="window.processBulkInboundPaste()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm">Proses Restock Bulk</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adjustment / Opname -->
+    <div id="modalAdjustment" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between shrink-0">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-amber-600"></i> Opname & Penyesuaian Stok
+                </h3>
+                <button onclick="window.closeModalAdjustment()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form id="formAdjustment" onsubmit="window.saveStockAdjustment(event)" class="space-y-3 text-xs overflow-y-auto flex-1 pr-1">
+                <div>
+                    <label class="font-bold text-slate-700 block mb-1">Cari Barcode / SKU / Nama Produk *</label>
+                    <div class="relative mb-2">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="adjustSearchInput" oninput="window.filterAdjustSkuOptions()" placeholder="Ketik barcode, SKU, nama barang, atau scan USB Barcode..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <select id="adjustSkuSelect" required onchange="window.handleAdjustSelectChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium">
+                    </select>
+                </div>
+
+                <div id="adjustSkuInfoBox" class="p-3 bg-amber-50 rounded-xl border border-amber-200 hidden space-y-1">
+                    <div class="flex justify-between text-slate-800 font-bold">
+                        <span id="adjustInfoName">-</span>
+                        <span id="adjustInfoStock" class="text-amber-800">Stok Sistem Saat Ini: 0 pcs</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="font-bold text-slate-700">Stok Hasil Opname Fisik (Pcs) *</label>
+                        <input type="number" id="adjustTargetStock" required min="0" placeholder="45" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-amber-800 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700">Alasan Penyesuaian *</label>
+                        <select id="adjustReasonSelect" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium">
+                            <option value="OPNAME_FISIK">Opname Fisik Rutin</option>
+                            <option value="BARANG_RUSAK">Barang Rusak / Pecah</option>
+                            <option value="SAMPLE_TEST">Sample / Tester Bazaar</option>
+                            <option value="KOREKSI_INPUT">Koreksi Salah Input</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-700">Catatan Detail Opname</label>
+                    <input type="text" id="adjustNotes" placeholder="Misal: 2 pcs kemasan pecah saat pengiriman" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeModalAdjustment()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-sm">Simpan Hasil Opname</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Stock Movement -->
+    <div id="modalStockMovement" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-4xl p-6 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-indigo-600"></i> Log Mutasi Stok (Stock Movement)
+                </h3>
+                <button onclick="window.closeModalStockMovement()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="flex items-center justify-between gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="stockMovementSearch" oninput="window.renderStockMovementTable()" placeholder="Cari SKU, nama barang, tipe mutasi..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <button onclick="window.exportStockMovementToCSV()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shrink-0">
+                    <i class="fa-solid fa-file-arrow-down"></i> Export Mutasi CSV
+                </button>
+            </div>
+
+            <div class="max-h-96 overflow-y-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 sticky top-0">
+                        <tr>
+                            <th class="p-3">Waktu</th>
+                            <th class="p-3">SKU & Nama Barang</th>
+                            <th class="p-3">Tipe Mutasi</th>
+                            <th class="p-3 text-center">Perubahan Qty</th>
+                            <th class="p-3 text-center">Stok Akhir</th>
+                            <th class="p-3">Referensi / Ket</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockMovementTableBody" class="divide-y divide-slate-100">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="window.closeModalStockMovement()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Delete All SKU -->
+    <div id="modalDeleteAllSKU" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-base text-slate-900">Hapus Seluruh SKU?</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                    Apakah Anda yakin ingin menghapus <span id="deleteAllCountText" class="font-bold text-rose-600">0</span> SKU dari database?
+                </p>
+            </div>
+            <div class="flex items-center justify-center gap-2 pt-2">
+                <button onclick="window.closeModalDeleteAllSKU()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Batal</button>
+                <button onclick="window.confirmDeleteAllSKU()" class="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm">Ya, Hapus Semua</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Bulk Excel Import -->
+    <div id="modalBulkExcel" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl p-6 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel text-emerald-600"></i> Upload Bulk SKU (Excel / CSV)
+                </h3>
+                <button onclick="window.closeModalBulkExcel()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="p-4 bg-blue-50/70 border border-blue-200/60 rounded-xl space-y-2 text-xs">
+                <span class="font-bold text-blue-900">Urutan Kolom File Excel:</span>
+                <p class="text-blue-800">1. Barcode | 2. SKU | 3. Brand | 4. Subsidiary | 5. Nama Barang | 6. Harga | 7. Stok | 8. Catatan Promo (Opsional)</p>
+            </div>
+
+            <div class="space-y-3">
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-blue-500 transition cursor-pointer relative bg-slate-50">
+                    <input type="file" accept=".xlsx, .xls, .csv" onchange="window.handleExcelFileUpload(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <i class="fa-solid fa-file-arrow-up text-3xl text-blue-500 mb-1"></i>
+                    <p class="text-xs font-bold text-slate-700">Pilih File Excel (.xlsx / .csv) atau Seret Ke Sini</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Atau Copy-Paste Langsung dari Excel:</label>
+                    <textarea id="bulkPasteText" rows="4" placeholder="8991001&#9;SKU-01&#9;Colgate&#9;Subsidiary A&#9;Pasta Gigi 100g&#9;15000&#9;50&#9;B1G1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="window.closeModalBulkExcel()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Batal</button>
+                <button onclick="window.processBulkPaste()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm">Proses & Simpan SKU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Scanner -->
+    <div id="modalScanner" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in text-center">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-camera text-blue-600"></i> Scan Barcode Kamera
+                </h3>
+                <button onclick="window.closeScannerModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="relative bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+                <video id="scannerVideo" class="w-full h-full object-cover" autoplay playsinline></video>
+                <div class="absolute inset-0 border-2 border-blue-500 border-dashed m-8 rounded-lg pointer-events-none opacity-60"></div>
+            </div>
+            <p class="text-xs text-slate-500">Arahkan kamera ke barcode produk</p>
+            <button onclick="window.closeScannerModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Tutup Scanner</button>
+        </div>
+    </div>
+
     <!-- Receipt / Struk Modal -->
     <div id="modalReceipt" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
@@ -657,20 +979,196 @@
         </div>
     </div>
 
+    <!-- Modal Firebase Config -->
+    <div id="modalFirebase" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud text-blue-600"></i> Config Realtime Database Firebase
+                </h3>
+                <button onclick="window.closeFirebaseModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <p class="text-xs text-slate-500">Paste JSON Konfigurasi Firebase dari console Firebase Anda di bawah ini:</p>
+            <div>
+                <textarea id="firebaseConfigInput" rows="6" placeholder='{ "apiKey": "...", "databaseURL": "..." }' class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="window.closeFirebaseModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Batal</button>
+                <button onclick="window.saveFirebaseConfig()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm">Simpan & Hubungkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Price List Print -->
+    <div id="modalPriceListPrint" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl p-6 space-y-4 animate-fade-in relative max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-print text-blue-600"></i> Pratinjau Price List Katalog Resmi
+                </h3>
+                <button onclick="window.closePriceListPrintModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div id="priceListContainer" class="flex-1 overflow-y-auto border border-slate-200 p-6 rounded-xl bg-white space-y-4 text-xs font-sans">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="window.exportPriceListCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-excel"></i> Download Excel / CSV
+                </button>
+                <button onclick="window.printPriceList()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-print"></i> Cetak / Simpan PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Claim Gimmick -->
+    <div id="modalClaimGimmick" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl p-6 space-y-4 animate-fade-in relative">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-gift text-emerald-600"></i> Pilih & Klaim Item Free Gimmick Gratis
+                </h3>
+                <button onclick="window.closeClaimGimmickModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-xs">
+                <p class="text-emerald-800 font-semibold">
+                    Klaim Rp 0 terkunci otomatis sesuai nominal belanja pembeli.
+                </p>
+                <span id="gimmickQuotaBadgeModal" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] shadow-sm">
+                    Sisa Kuota: 0 Pcs
+                </span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="gimmickSearchInput" oninput="window.renderGimmickPickerList()" placeholder="Cari nama barang atau brand gimmick..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer shrink-0 bg-slate-100 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-200 transition">
+                    <input type="checkbox" id="gimmickZeroPriceOnly" checked onchange="window.renderGimmickPickerList()" class="rounded text-emerald-600 focus:ring-emerald-500">
+                    <span>Hanya Barang Rp 0</span>
+                </label>
+            </div>
+
+            <div id="gimmickPickerContainer" class="max-h-72 overflow-y-auto space-y-2 pr-1">
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="window.closeClaimGimmickModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Selesai / Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add SKU -->
+    <div id="modalAddSKU" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-lg p-6 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h3 id="modalSKUTitle" class="font-bold text-base text-slate-900">Tambah SKU Baru</h3>
+                <button onclick="window.closeModalAddSKU()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="formAddSKU" onsubmit="window.saveSingleSKU(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="skuEditId">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="font-bold text-slate-700">Barcode *</label>
+                        <input type="text" id="skuBarcode" required placeholder="8991001..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700">Kode SKU *</label>
+                        <input type="text" id="skuCode" required placeholder="SKU-001" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700">Nama Barang *</label>
+                    <input type="text" id="skuName" required placeholder="Nama Produk" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="font-bold text-slate-700">Brand *</label>
+                        <input type="text" id="skuBrand" required placeholder="Brand" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700">Subsidiary / Dept *</label>
+                        <input type="text" id="skuSubsidiary" required placeholder="Subsidiary" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="font-bold text-slate-700">Harga Normal (Rp) *</label>
+                        <input type="number" id="skuPrice" required min="0" placeholder="15000" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700">Stok Awal *</label>
+                        <input type="number" id="skuStock" required min="0" placeholder="50" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="font-bold text-slate-700">Promo Tag / Catatan (Opsional)</label>
+                    <input type="text" id="skuPromoTag" placeholder="B1G1 / Disc 20%" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="window.closeModalAddSKU()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm">Simpan SKU</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Delete Tx -->
+    <div id="modalDeleteTx" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-base text-slate-900">Hapus / Void Transaksi Ini?</h3>
+                <p class="text-xs text-slate-500 mt-1">
+                    Transaksi <span id="deleteTxIdText" class="font-bold text-slate-800">TRX-XXX</span> akan dihapus dari laporan dan <span class="font-bold text-emerald-600">stok barang akan dikembalikan</span> ke Master List.
+                </p>
+            </div>
+            <div class="flex items-center justify-center gap-2 pt-2">
+                <button onclick="window.closeModalDeleteTx()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Batal</button>
+                <button onclick="window.confirmDeleteTransaction()" class="w-1/2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm">Ya, Hapus Transaksi</button>
+            </div>
+        </div>
+    </div>
+
     <div id="printableArea" class="hidden"></div>
 
+    <!-- Application Scripting Logic -->
     <script>
+        // Global Error Boundary to prevent iframe runner crashes
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.warn('Unhandled Script Warning:', msg, error);
+            return true;
+        };
+
+        // Safe Storage Helper to handle restricted iframe environments
+        window.safeLocalStorage = {
+            getItem: function(key) {
+                try { return localStorage.getItem(key); } catch(e) { return null; }
+            },
+            setItem: function(key, val) {
+                try { localStorage.setItem(key, val); } catch(e) {}
+            },
+            removeItem: function(key) {
+                try { localStorage.removeItem(key); } catch(e) {}
+            }
+        };
+
         const DEFAULT_FIREBASE_CONFIG = {
             apiKey: "AIzaSyDFkixQzUAbPE_tdYw2lXw-848MVr1X5A0",
             authDomain: "kasir-bazzar.firebaseapp.com",
             databaseURL: "https://kasir-bazzar-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "kasir-bazzar",
-            storageBucket: "kasir-bazaar.firebasestorage.app",
+            storageBucket: "kasir-bazzar.firebasestorage.app",
             messagingSenderId: "977817167140",
             appId: "1:977817167140:web:c42854307750bf1c10ffb1"
         };
 
-        // Defensive Array Normalizer for Firebase Objects
         window.normalizeArray = function(data) {
             if (!data) return [];
             if (Array.isArray(data)) return data.filter(Boolean);
@@ -689,25 +1187,25 @@
             { id: 'PROMO-B2G2', name: 'Promo Buy 2 Get 2 Boncept', type: 'PAKET_PROMO', badge: 'BUY 2 GET 2', bundleQty: 4, bundlePrice: 23400, skus: ['SKU-BON-01', 'SKU-BON-02'] }
         ];
 
-        // Safely Load and Merge Local Datasets
-        const rawLocalProducts = localStorage.getItem('bazaar_products');
+        // Safely Load Datasets
+        const rawLocalProducts = window.safeLocalStorage.getItem('bazaar_products');
         window.products = rawLocalProducts ? window.normalizeArray(JSON.parse(rawLocalProducts)) : INITIAL_PRODUCTS;
 
-        const rawLocalTx1 = localStorage.getItem('bazaar_transactions');
-        const rawLocalTx2 = localStorage.getItem('transactions');
+        const rawLocalTx1 = window.safeLocalStorage.getItem('bazaar_transactions');
+        const rawLocalTx2 = window.safeLocalStorage.getItem('transactions');
         let parsedTx1 = rawLocalTx1 ? window.normalizeArray(JSON.parse(rawLocalTx1)) : [];
         let parsedTx2 = rawLocalTx2 ? window.normalizeArray(JSON.parse(rawLocalTx2)) : [];
         const mergedTxMap = new Map();
         [...parsedTx1, ...parsedTx2].forEach(tx => { if (tx && tx.id) mergedTxMap.set(tx.id, tx); });
         window.transactions = Array.from(mergedTxMap.values()).sort((a,b) => (b.id||'').localeCompare(a.id||''));
 
-        const rawLocalPromos = localStorage.getItem('bazaar_promos');
+        const rawLocalPromos = window.safeLocalStorage.getItem('bazaar_promos');
         window.promos = rawLocalPromos ? window.normalizeArray(JSON.parse(rawLocalPromos)) : INITIAL_PROMOS;
 
-        const rawLocalMovements = localStorage.getItem('bazaar_stock_movements');
+        const rawLocalMovements = window.safeLocalStorage.getItem('bazaar_stock_movements');
         window.stockMovements = rawLocalMovements ? window.normalizeArray(JSON.parse(rawLocalMovements)) : [];
 
-        const rawLocalThres = localStorage.getItem('bazaar_thresholds');
+        const rawLocalThres = window.safeLocalStorage.getItem('bazaar_thresholds');
         window.thresholdPromos = rawLocalThres ? window.normalizeArray(JSON.parse(rawLocalThres)) : [
             { id: 'THRES-250K', name: 'Min. Belanja 250 Ribu', type: 'PERCENT', minAmount: 250000, value: 10, label: 'Diskon 10% Otomatis' },
             { id: 'THRES-500K', name: 'Min. Belanja 500 Ribu', type: 'GIMMICK', minAmount: 500000, value: 1, rewardCount: 1, label: 'Klaim 1 Pcs Free Bonus' }
@@ -718,10 +1216,12 @@
         window.firebaseDb = null;
         window.pendingCheckoutMethod = null;
 
-        window.spvPin = localStorage.getItem('spv_pin') || '1234';
-        window.kasirPin = localStorage.getItem('kasir_pin') || '5678';
-        
-        // DEFAULT ROLE TO PUBLIC MODE (UMUM)
+        // Transaction table sorting state
+        window.txSortColumn = 'date'; 
+        window.txSortDirection = 'desc'; 
+
+        window.spvPin = window.safeLocalStorage.getItem('spv_pin') || '1234';
+        window.kasirPin = window.safeLocalStorage.getItem('kasir_pin') || '5678';
         window.currentRole = 'UMUM';
 
         window.showToast = function(msg, type = 'info') {
@@ -1201,7 +1701,7 @@
 
             const autoPromoDiscount = Math.max(0, grandSubtotalNormal - grandFinalTotal);
 
-            // MULTI-THRESHOLD STACKING CALCULATOR (Combines Diskon %/Rp AND Free Gimmicks)
+            // MULTI-THRESHOLD STACKING CALCULATOR
             let thresDiscountVal = 0;
             let eligibleGimmickQuotas = 0;
             const thresList = window.normalizeArray(window.thresholdPromos).sort((a,b) => a.minAmount - b.minAmount);
@@ -1236,7 +1736,7 @@
             document.getElementById('cartGrandTotalText').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
             document.getElementById('cartCountBadge').innerText = window.cart.reduce((a, b) => a + b.qty, 0).toString();
 
-            // Threshold Combined Progress Bar
+            // Threshold Progress & Multi-Reward Stack Bar
             const thresContainer = document.getElementById('cartThresholdProgressContainer');
             if (thresContainer) {
                 if (thresList.length > 0) {
@@ -1347,13 +1847,15 @@
 
             const totals = window.currentCartTotals || { subtotal: 0, promoDiscount: 0, thresholdDiscount: 0, manualDiscount: 0, totalDiscount: 0, grandTotal: 0 };
 
-            const txId = 'TRX-' + Date.now().toString().slice(-6);
             const now = new Date();
+            const nowMs = now.getTime();
+            const txId = 'TRX-' + nowMs;
             const dateStr = now.toISOString().split('T')[0];
             const timeStr = now.toTimeString().split(' ')[0].slice(0, 5);
 
             const newTx = {
                 id: txId,
+                createdAt: nowMs,
                 date: dateStr,
                 time: timeStr,
                 timestamp: `${dateStr} ${timeStr}`,
@@ -1381,9 +1883,9 @@
             });
 
             window.transactions.unshift(newTx);
-            localStorage.setItem('bazaar_products', JSON.stringify(window.products));
-            localStorage.setItem('bazaar_transactions', JSON.stringify(window.transactions));
-            localStorage.setItem('transactions', JSON.stringify(window.transactions));
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            window.safeLocalStorage.setItem('bazaar_transactions', JSON.stringify(window.transactions));
+            window.safeLocalStorage.setItem('transactions', JSON.stringify(window.transactions));
 
             if (window.firebaseDb) {
                 window.firebaseDb.ref('products').set(window.products);
@@ -1397,509 +1899,48 @@
             window.showToast(`Transaksi ${txId} Berhasil!`, 'info');
         };
 
-        window.logStockMovement = function(sku, name, changeQtyStr, finalStock, type, refNo, notes) {
-            const now = new Date();
-            const timestamp = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            
-            window.stockMovements.unshift({
-                timestamp, sku, name, changeQtyStr, finalStock, type, refNo: refNo || '-', notes: notes || '-'
-            });
+        // Precision Date Parser for Transaction Sorting
+        window.parseTxTimestamp = function(tx) {
+            if (!tx) return 0;
 
-            localStorage.setItem('bazaar_stock_movements', JSON.stringify(window.stockMovements));
-            if (window.firebaseDb) window.firebaseDb.ref('stockMovements').set(window.stockMovements);
-        };
+            if (typeof tx.createdAt === 'number' && tx.createdAt > 0) return tx.createdAt;
 
-        window.openModalPromo = function() {
-            if (window.currentRole !== 'SPV') {
-                document.getElementById('modalSpvPin')?.classList.remove('hidden');
-                return;
-            }
-            document.getElementById('formPromo')?.reset();
-            document.getElementById('promoEditId').value = '';
-            const title = document.getElementById('modalPromoTitle');
-            if (title) title.innerText = 'Buat Program Promo Baru';
-            
-            const skuContainer = document.getElementById('promoSKUCheckboxList');
-            if (skuContainer) {
-                const prods = window.normalizeArray(window.products);
-                skuContainer.innerHTML = prods.map(p => `
-                    <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                        <input type="checkbox" name="promoSKUs" value="${p.sku}" class="rounded text-blue-600 focus:ring-blue-500">
-                        <span><b>${p.sku}</b> - ${p.name} (${p.brand})</span>
-                    </label>
-                `).join('');
+            if (tx.id && typeof tx.id === 'string' && tx.id.startsWith('TRX-')) {
+                const numPart = parseInt(tx.id.replace('TRX-', ''), 10);
+                if (!isNaN(numPart) && numPart > 1000000000000) return numPart;
             }
 
-            document.getElementById('modalPromo')?.classList.remove('hidden');
-        };
+            let dateStr = String(tx.date || '').trim();
+            let timeStr = String(tx.time || '00:00').trim();
 
-        window.closeModalPromo = function() {
-            document.getElementById('modalPromo')?.classList.add('hidden');
-        };
-
-        window.handlePromoTypeChange = function() {
-            const type = document.getElementById('promoTypeSelect')?.value;
-            const pkgBox = document.getElementById('promoPaketConfigContainer');
-            if (pkgBox) {
-                if (type === 'PAKET_PROMO') pkgBox.classList.remove('hidden'); else pkgBox.classList.add('hidden');
-            }
-        };
-
-        window.editPromo = function(id) {
-            if (window.currentRole !== 'SPV') {
-                document.getElementById('modalSpvPin')?.classList.remove('hidden');
-                return;
-            }
-            const promos = window.normalizeArray(window.promos);
-            const promo = promos.find(p => String(p.id) === String(id));
-            if (!promo) return;
-
-            document.getElementById('promoEditId').value = promo.id;
-            document.getElementById('promoName').value = promo.name || '';
-            document.getElementById('promoTypeSelect').value = promo.type || 'PAKET_PROMO';
-            document.getElementById('promoBadgeTag').value = promo.badge || '';
-            document.getElementById('promoBundleQty').value = promo.bundleQty || 1;
-            document.getElementById('promoBundlePrice').value = promo.bundlePrice || 0;
-
-            window.handlePromoTypeChange();
-
-            const skuContainer = document.getElementById('promoSKUCheckboxList');
-            if (skuContainer) {
-                const prods = window.normalizeArray(window.products);
-                const pSkus = window.normalizeArray(promo.skus);
-                skuContainer.innerHTML = prods.map(p => {
-                    const checked = pSkus.includes(p.sku) ? 'checked' : '';
-                    return `
-                        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
-                            <input type="checkbox" name="promoSKUs" value="${p.sku}" ${checked} class="rounded text-blue-600 focus:ring-blue-500">
-                            <span><b>${p.sku}</b> - ${p.name} (${p.brand})</span>
-                        </label>
-                    `;
-                }).join('');
+            if (!dateStr && tx.timestamp && typeof tx.timestamp === 'string') {
+                const parts = tx.timestamp.split(' ');
+                dateStr = parts[0] || '';
+                if (parts[1]) timeStr = parts[1];
             }
 
-            const title = document.getElementById('modalPromoTitle');
-            if (title) title.innerText = 'Edit Program Promo';
-
-            document.getElementById('modalPromo')?.classList.remove('hidden');
-        };
-
-        window.savePromoProgram = function(e) {
-            e.preventDefault();
-            const name = document.getElementById('promoName')?.value.trim();
-            const type = document.getElementById('promoTypeSelect')?.value;
-            const badge = document.getElementById('promoBadgeTag')?.value.trim();
-            const bundleQty = parseInt(document.getElementById('promoBundleQty')?.value) || 1;
-            const bundlePrice = parseFloat(document.getElementById('promoBundlePrice')?.value) || 0;
-
-            const selectedSKUs = Array.from(document.querySelectorAll('input[name="promoSKUs"]:checked')).map(cb => cb.value);
-
-            const editId = document.getElementById('promoEditId')?.value;
-            if (editId) {
-                const target = window.promos.find(p => String(p.id) === String(editId));
-                if (target) {
-                    target.name = name;
-                    target.type = type;
-                    target.badge = badge;
-                    target.bundleQty = bundleQty;
-                    target.bundlePrice = bundlePrice;
-                    target.skus = selectedSKUs;
+            if (dateStr.includes('/')) {
+                const [d, m, y] = dateStr.split('/');
+                if (d && m && y) {
+                    dateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
                 }
+            }
+
+            timeStr = timeStr.replace('.', ':');
+            const isoString = `${dateStr}T${timeStr}:00`;
+            const parsedMs = Date.parse(isoString);
+            return isNaN(parsedMs) ? 0 : parsedMs;
+        };
+
+        // Transaction Table Sorting Handler
+        window.setTxSort = function(column) {
+            if (window.txSortColumn === column) {
+                window.txSortDirection = window.txSortDirection === 'asc' ? 'desc' : 'asc';
             } else {
-                const newPromo = {
-                    id: 'PROMO-' + Date.now(),
-                    name, type, badge, bundleQty, bundlePrice, skus: selectedSKUs
-                };
-                window.promos.unshift(newPromo);
+                window.txSortColumn = column;
+                window.txSortDirection = (column === 'date' || column === 'total' || column === 'items') ? 'desc' : 'asc';
             }
-
-            localStorage.setItem('bazaar_promos', JSON.stringify(window.promos));
-            if (window.firebaseDb) window.firebaseDb.ref('promos').set(window.promos);
-
-            window.closeModalPromo();
-            window.renderPromoList();
-            window.renderPublicPromoHighlights();
-            window.renderCatalog();
-            window.updateBadgeCounts();
-            window.showToast('Program promo berhasil disimpan!', 'info');
-        };
-
-        window.deletePromo = function(id) {
-            if (window.currentRole !== 'SPV') {
-                document.getElementById('modalSpvPin')?.classList.remove('hidden');
-                return;
-            }
-            window.promos = window.promos.filter(p => String(p.id) !== String(id));
-            localStorage.setItem('bazaar_promos', JSON.stringify(window.promos));
-            if (window.firebaseDb) window.firebaseDb.ref('promos').set(window.promos);
-            window.renderPromoList();
-            window.renderPublicPromoHighlights();
-            window.renderCatalog();
-            window.updateBadgeCounts();
-            window.showToast('Promo Dihapus!', 'info');
-        };
-
-        window.renderPromoList = function() {
-            const container = document.getElementById('promoProgramList');
-            if (!container) return;
-
-            const promos = window.normalizeArray(window.promos);
-            if (promos.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full bg-white p-8 rounded-2xl text-center text-slate-400 space-y-2 border border-slate-200">
-                        <i class="fa-solid fa-tags text-3xl opacity-40"></i>
-                        <p class="text-xs font-semibold">Belum ada program promo dibuat</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = promos.map(p => `
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
-                    <div class="space-y-1">
-                        <div class="flex items-center justify-between">
-                            <span class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-extrabold uppercase">${p.badge}</span>
-                            <div class="flex items-center gap-1.5">
-                                <button onclick="window.editPromo('${p.id}')" class="text-slate-400 hover:text-blue-600 transition text-xs p-1" title="Edit Promo"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="window.deletePromo('${p.id}')" class="text-slate-400 hover:text-rose-600 transition text-xs p-1" title="Hapus Promo"><i class="fa-solid fa-trash-can"></i></button>
-                            </div>
-                        </div>
-                        <h4 class="font-bold text-xs text-slate-900 pt-1">${p.name}</h4>
-                        <div class="text-[11px] text-purple-700 font-extrabold">
-                            Paket ${p.bundleQty || 1} Pcs = Rp ${Number(p.bundlePrice || 0).toLocaleString('id-ID')}
-                        </div>
-                    </div>
-                    <div class="text-[10px] text-slate-500 border-t border-slate-100 pt-2">
-                        SKU Ikut: <b>${window.normalizeArray(p.skus).join(', ')}</b>
-                    </div>
-                </div>
-            `).join('');
-
-            window.applyRolePermissions();
-        };
-
-        window.openModalThresholdPromo = function() {
-            if (window.currentRole !== 'SPV') {
-                document.getElementById('modalSpvPin')?.classList.remove('hidden');
-                return;
-            }
-            document.getElementById('formThresholdPromo')?.reset();
-            document.getElementById('thresholdEditId').value = '';
-            const typeSelect = document.getElementById('thresholdTypeSelect');
-            if (typeSelect) typeSelect.value = 'PERCENT';
-            window.handleThresholdTypeChange();
-            const title = document.getElementById('modalThresholdTitle');
-            if (title) title.innerText = 'Tambah Program Minimal Belanja';
-            document.getElementById('modalThresholdPromo')?.classList.remove('hidden');
-        };
-
-        window.closeModalThresholdPromo = function() {
-            document.getElementById('modalThresholdPromo')?.classList.add('hidden');
-        };
-
-        window.handleThresholdTypeChange = function() {
-            const type = document.getElementById('thresholdTypeSelect')?.value;
-            const container = document.getElementById('thresholdValueContainer');
-            const label = document.getElementById('thresholdValueLabel');
-            const input = document.getElementById('thresholdDiscountValue');
-
-            if (!container || !label || !input) return;
-
-            if (type === 'PERCENT') {
-                container.classList.remove('hidden');
-                label.innerText = 'Nilai Diskon Persentase (%) *';
-                input.placeholder = '10';
-                input.required = true;
-            } else if (type === 'NOMINAL') {
-                container.classList.remove('hidden');
-                label.innerText = 'Nilai Potongan Diskon (Rp) *';
-                input.placeholder = '25000';
-                input.required = true;
-            } else {
-                container.classList.remove('hidden');
-                label.innerText = 'Jumlah Kuota Free Bonus/Gimmick (Pcs) *';
-                input.placeholder = '1';
-                input.required = true;
-            }
-        };
-
-        window.editThresholdPromo = function(id) {
-            if (window.currentRole !== 'SPV') {
-                document.getElementById('modalSpvPin')?.classList.remove('hidden');
-                return;
-            }
-            const thresholds = window.normalizeArray(window.thresholdPromos);
-            const threshold = thresholds.find(t => String(t.id) === String(id));
-            if (!threshold) return;
-
-            document.getElementById('thresholdEditId').value = threshold.id;
-            document.getElementById('thresholdName').value = threshold.name || '';
-            const typeSelect = document.getElementById('thresholdTypeSelect');
-            if (typeSelect) typeSelect.value = threshold.type || 'PERCENT';
-            window.handleThresholdTypeChange();
-
-            document.getElementById('thresholdMinAmount').value = threshold.minAmount || 0;
-            const valInput = document.getElementById('thresholdDiscountValue');
-            if (valInput) valInput.value = threshold.value || threshold.rewardCount || 0;
-            document.getElementById('thresholdLabel').value = threshold.label || '';
-
-            const title = document.getElementById('modalThresholdTitle');
-            if (title) title.innerText = 'Edit Program Minimal Belanja';
-
-            document.getElementById('modalThresholdPromo')?.classList.remove('hidden');
-        };
-
-        window.saveThresholdPromo = function(e) {
-            e.preventDefault();
-            const name = document.getElementById('thresholdName')?.value.trim();
-            const type = document.getElementById('thresholdTypeSelect')?.value || 'PERCENT';
-            const minAmount = parseFloat(document.getElementById('thresholdMinAmount')?.value) || 0;
-            const value = parseFloat(document.getElementById('thresholdDiscountValue')?.value) || 0;
-            const label = document.getElementById('thresholdLabel')?.value.trim();
-            const editId = document.getElementById('thresholdEditId')?.value;
-
-            if (editId) {
-                const target = window.thresholdPromos.find(t => String(t.id) === String(editId));
-                if (target) {
-                    target.name = name;
-                    target.type = type;
-                    target.minAmount = minAmount;
-                    target.value = value;
-                    target.rewardCount = value;
-                    target.label = label;
-                }
-            } else {
-                window.thresholdPromos.push({
-                    id: 'THRES-' + Date.now(),
-                    name, type, minAmount, value, rewardCount: value, label
-                });
-            }
-
-            localStorage.setItem('bazaar_thresholds', JSON.stringify(window.thresholdPromos));
-            if (window.firebaseDb) window.firebaseDb.ref('thresholds').set(window.thresholdPromos);
-
-            window.closeModalThresholdPromo();
-            window.renderThresholdPromoList();
-            window.renderCart();
-            window.showToast('Program Minimal Belanja Disimpan!', 'info');
-        };
-
-        window.deleteThresholdPromo = function(id) {
-            if (window.currentRole !== 'SPV') {
-                document.getElementById('modalSpvPin')?.classList.remove('hidden');
-                return;
-            }
-            window.thresholdPromos = window.thresholdPromos.filter(t => String(t.id) !== String(id));
-            localStorage.setItem('bazaar_thresholds', JSON.stringify(window.thresholdPromos));
-            if (window.firebaseDb) window.firebaseDb.ref('thresholds').set(window.thresholdPromos);
-            window.renderThresholdPromoList();
-            window.showToast('Program Minimal Belanja Dihapus!', 'info');
-        };
-
-        window.renderThresholdPromoList = function() {
-            const container = document.getElementById('thresholdPromoList');
-            if (!container) return;
-
-            const thresList = window.normalizeArray(window.thresholdPromos);
-            if (thresList.length === 0) {
-                container.innerHTML = `<p class="col-span-full text-xs text-slate-400 italic">Belum ada program minimal belanja.</p>`;
-                return;
-            }
-
-            container.innerHTML = thresList.map(t => `
-                <div class="bg-amber-50/80 border border-amber-200 p-3.5 rounded-2xl space-y-2 flex items-center justify-between">
-                    <div>
-                        <span class="font-extrabold text-xs text-amber-900 block">${t.name}</span>
-                        <div class="text-[11px] text-amber-800 font-semibold">
-                            Min. Rp ${Number(t.minAmount).toLocaleString('id-ID')} → ${t.label}
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1.5 shrink-0">
-                        <button onclick="window.editThresholdPromo('${t.id}')" class="text-amber-700 hover:text-blue-600 text-xs p-1" title="Edit Program"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="window.deleteThresholdPromo('${t.id}')" class="text-amber-700 hover:text-rose-600 text-xs p-1" title="Hapus Program"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                </div>
-            `).join('');
-
-            window.applyRolePermissions();
-        };
-
-        window.openClaimGimmickModal = function(quota) {
-            const badge = document.getElementById('gimmickQuotaBadgeModal');
-            if (badge) badge.innerText = `Sisa Kuota: ${quota} Pcs`;
-            window.renderGimmickPickerList();
-            document.getElementById('modalClaimGimmick')?.classList.remove('hidden');
-        };
-
-        window.closeClaimGimmickModal = function() {
-            document.getElementById('modalClaimGimmick')?.classList.add('hidden');
-        };
-
-        window.renderGimmickPickerList = function() {
-            const container = document.getElementById('gimmickPickerContainer');
-            const searchVal = (document.getElementById('gimmickSearchInput')?.value || '').toLowerCase().trim();
-            const zeroOnly = document.getElementById('gimmickZeroPriceOnly')?.checked;
-
-            if (!container) return;
-
-            const prods = window.normalizeArray(window.products);
-            const filtered = prods.filter(p => {
-                const matchesSearch = String(p.name || '').toLowerCase().includes(searchVal) || String(p.sku || '').toLowerCase().includes(searchVal);
-                const matchesPrice = !zeroOnly || p.price === 0;
-                return matchesSearch && matchesPrice;
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Tidak ada item bonus gimmick cocok.</p>`;
-                return;
-            }
-
-            container.innerHTML = filtered.map(p => `
-                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-2">
-                    <div>
-                        <span class="font-bold text-xs text-slate-800 block">${p.name}</span>
-                        <span class="text-[10px] text-slate-500 font-mono">${p.sku} • Harga: Rp ${Number(p.price || 0).toLocaleString('id-ID')} • Stok: ${p.stock}</span>
-                    </div>
-                    <button onclick="window.claimGimmickItem('${p.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition shrink-0">
-                        + Klaim Rp 0
-                    </button>
-                </div>
-            `).join('');
-        };
-
-        window.claimGimmickItem = function(id) {
-            const prods = window.normalizeArray(window.products);
-            const prod = prods.find(p => String(p.id) === String(id));
-            if (!prod || prod.stock <= 0) {
-                window.showToast('Stok bonus habis!', 'warning');
-                return;
-            }
-
-            window.cart.push({
-                id: prod.id,
-                sku: prod.sku,
-                name: `[BONUS GIMMICK] ${prod.name}`,
-                brand: prod.brand,
-                price: 0,
-                qty: 1
-            });
-
-            window.renderCart();
-            window.showToast(`Bonus ${prod.name} ditambahkan!`, 'info');
-            window.closeClaimGimmickModal();
-        };
-
-        window.renderMasterTable = function() {
-            const tbody = document.getElementById('masterTableBody');
-            const searchVal = (document.getElementById('masterSearch')?.value || '').toLowerCase().trim();
-
-            if (!tbody) return;
-
-            const prods = window.normalizeArray(window.products);
-            const filtered = prods.filter(p => {
-                const nameStr = String(p.name || '').toLowerCase();
-                const skuStr = String(p.sku || '').toLowerCase();
-                const barStr = String(p.barcode || '').toLowerCase();
-                const brandStr = String(p.brand || '').toLowerCase();
-
-                return nameStr.includes(searchVal) || skuStr.includes(searchVal) || barStr.includes(searchVal) || brandStr.includes(searchVal);
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 text-xs">Tidak ada SKU terdaftar.</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(p => `
-                <tr class="hover:bg-slate-50 text-xs">
-                    <td class="p-3.5"><div class="font-bold text-slate-800 font-mono">${p.sku}</div><div class="text-[10px] text-slate-400 font-mono">${p.barcode || '-'}</div></td>
-                    <td class="p-3.5 font-bold text-slate-900">${p.name}</td>
-                    <td class="p-3.5"><span class="font-bold text-slate-700">${p.brand || '-'}</span> <span class="text-slate-400">(${p.subsidiary || '-'})</span></td>
-                    <td class="p-3.5 font-extrabold text-blue-700">Rp ${Number(p.price || 0).toLocaleString('id-ID')}</td>
-                    <td class="p-3.5 font-bold ${p.stock > 10 ? 'text-emerald-600' : p.stock > 0 ? 'text-amber-600' : 'text-rose-600'}">${p.stock} Pcs</td>
-                    <td class="p-3.5"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-[10px]">${p.promoTag || '-'}</span></td>
-                    <td class="p-3.5 text-right space-x-1">
-                        <button onclick="window.editSKU('${p.id}')" class="spv-only p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold" title="Edit SKU"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="window.deleteSKU('${p.id}')" class="spv-only p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-
-            window.applyRolePermissions();
-        };
-
-        window.openModalAddSKU = function() {
-            document.getElementById('formAddSKU')?.reset();
-            document.getElementById('skuEditId').value = '';
-            document.getElementById('modalSKUTitle').innerText = 'Tambah SKU Baru';
-            document.getElementById('modalAddSKU')?.classList.remove('hidden');
-        };
-
-        window.closeModalAddSKU = function() { document.getElementById('modalAddSKU')?.classList.add('hidden'); };
-
-        window.saveSingleSKU = function(e) {
-            e.preventDefault();
-            const id = document.getElementById('skuEditId').value;
-            const barcode = document.getElementById('skuBarcode').value.trim();
-            const sku = document.getElementById('skuCode').value.trim();
-            const name = document.getElementById('skuName').value.trim();
-            const brand = document.getElementById('skuBrand').value.trim();
-            const subsidiary = document.getElementById('skuSubsidiary').value.trim();
-            const price = parseFloat(document.getElementById('skuPrice').value) || 0;
-            const stock = parseInt(document.getElementById('skuStock').value) || 0;
-            const promoTag = document.getElementById('skuPromoTag').value.trim();
-
-            if (id) {
-                const prod = window.products.find(p => String(p.id) === String(id));
-                if (prod) {
-                    prod.barcode = barcode; prod.sku = sku; prod.name = name; prod.brand = brand;
-                    prod.subsidiary = subsidiary; prod.price = price; prod.stock = stock; prod.promoTag = promoTag;
-                }
-            } else {
-                window.products.push({
-                    id: 'PROD-' + Date.now(),
-                    barcode, sku, name, brand, subsidiary, price, stock, promoTag
-                });
-            }
-
-            localStorage.setItem('bazaar_products', JSON.stringify(window.products));
-            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
-
-            window.closeModalAddSKU();
-            window.renderCatalog();
-            window.renderMasterTable();
-            window.updateBadgeCounts();
-            window.showToast('Data SKU berhasil disimpan!', 'info');
-        };
-
-        window.editSKU = function(id) {
-            const prods = window.normalizeArray(window.products);
-            const prod = prods.find(p => String(p.id) === String(id));
-            if (!prod) return;
-
-            document.getElementById('skuEditId').value = prod.id;
-            document.getElementById('skuBarcode').value = prod.barcode || '';
-            document.getElementById('skuCode').value = prod.sku;
-            document.getElementById('skuName').value = prod.name;
-            document.getElementById('skuBrand').value = prod.brand;
-            document.getElementById('skuSubsidiary').value = prod.subsidiary;
-            document.getElementById('skuPrice').value = prod.price;
-            document.getElementById('skuStock').value = prod.stock;
-            document.getElementById('skuPromoTag').value = prod.promoTag || '';
-
-            document.getElementById('modalSKUTitle').innerText = 'Edit SKU Produk';
-            document.getElementById('modalAddSKU')?.classList.remove('hidden');
-        };
-
-        window.deleteSKU = function(id) {
-            if (window.currentRole !== 'SPV') return;
-            window.products = window.products.filter(p => String(p.id) !== String(id));
-            localStorage.setItem('bazaar_products', JSON.stringify(window.products));
-            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
-            window.renderCatalog();
-            window.renderMasterTable();
-            window.updateBadgeCounts();
-            window.showToast('SKU Dihapus!', 'info');
+            window.renderReports();
         };
 
         window.renderReports = function() {
@@ -1914,8 +1955,8 @@
             const productSalesMap = {};
 
             txList.forEach(tx => {
-                const gTotal = tx.grandTotal || 0;
-                const disc = tx.discount || tx.totalDiscount || 0;
+                const gTotal = Number(tx.grandTotal || tx.total || 0);
+                const disc = Number(tx.discount || tx.totalDiscount || 0);
                 const method = tx.method || tx.paymentMethod || 'QRIS';
 
                 totalRevenue += gTotal;
@@ -1924,18 +1965,20 @@
 
                 const items = window.normalizeArray(tx.items);
                 items.forEach(item => {
-                    totalPcs += item.qty;
+                    const itemQty = Number(item.qty || 1);
+                    const itemPrice = Number(item.price || 0);
+                    totalPcs += itemQty;
 
                     const b = item.brand || 'Lainnya';
                     if (!brandMap[b]) brandMap[b] = { pcs: 0, revenue: 0 };
-                    brandMap[b].pcs += item.qty;
-                    brandMap[b].revenue += (item.price * item.qty);
+                    brandMap[b].pcs += itemQty;
+                    brandMap[b].revenue += (itemPrice * itemQty);
 
                     if (!productSalesMap[item.sku]) {
                         productSalesMap[item.sku] = { sku: item.sku, name: item.name, brand: item.brand, pcs: 0, revenue: 0 };
                     }
-                    productSalesMap[item.sku].pcs += item.qty;
-                    productSalesMap[item.sku].revenue += (item.price * item.qty);
+                    productSalesMap[item.sku].pcs += itemQty;
+                    productSalesMap[item.sku].revenue += (itemPrice * itemQty);
                 });
             });
 
@@ -1979,24 +2022,69 @@
                 `).join('');
             }
 
-            // Transaction log table with clickable receipt preview buttons
+            const columns = ['date', 'id', 'method', 'items', 'customer', 'total'];
+            columns.forEach(col => {
+                const iconEl = document.getElementById(`sort-icon-${col}`);
+                if (iconEl) {
+                    if (window.txSortColumn === col) {
+                        iconEl.innerText = window.txSortDirection === 'asc' ? '▲' : '▼';
+                        iconEl.className = 'text-blue-600 font-mono font-bold';
+                    } else {
+                        iconEl.innerText = '⇅';
+                        iconEl.className = 'text-slate-400 font-mono';
+                    }
+                }
+            });
+
+            const sortedTx = [...txList].sort((a, b) => {
+                let valA, valB;
+                const dir = window.txSortDirection === 'asc' ? 1 : -1;
+
+                if (window.txSortColumn === 'date') {
+                    valA = window.parseTxTimestamp(a);
+                    valB = window.parseTxTimestamp(b);
+                    return (valA - valB) * dir;
+                } else if (window.txSortColumn === 'total') {
+                    valA = Number(a.grandTotal || a.total || 0);
+                    valB = Number(b.grandTotal || b.total || 0);
+                    return (valA - valB) * dir;
+                } else if (window.txSortColumn === 'items') {
+                    const itemsA = window.normalizeArray(a.items);
+                    const itemsB = window.normalizeArray(b.items);
+                    valA = itemsA.reduce((sum, i) => sum + Number(i.qty || 1), 0);
+                    valB = itemsB.reduce((sum, i) => sum + Number(i.qty || 1), 0);
+                    return (valA - valB) * dir;
+                } else if (window.txSortColumn === 'id') {
+                    valA = String(a.id || '');
+                    valB = String(b.id || '');
+                } else if (window.txSortColumn === 'method') {
+                    valA = String(a.method || a.paymentMethod || '');
+                    valB = String(b.method || b.paymentMethod || '');
+                } else if (window.txSortColumn === 'customer') {
+                    valA = String(a.customer || a.customerName || '');
+                    valB = String(b.customer || b.customerName || '');
+                }
+
+                return valA.localeCompare(valB, 'id', { numeric: true, sensitivity: 'base' }) * dir;
+            });
+
             const txTbody = document.getElementById('transactionLogBody');
             if (txTbody) {
-                if (txList.length === 0) {
+                if (sortedTx.length === 0) {
                     txTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 text-xs">Belum ada transaksi recorded.</td></tr>`;
                 } else {
-                    txTbody.innerHTML = txList.map(tx => `
+                    txTbody.innerHTML = sortedTx.map(tx => `
                         <tr class="hover:bg-slate-50">
                             <td class="p-3 text-slate-500 font-mono">${tx.date || tx.timestamp || '-'} ${tx.time || ''}</td>
                             <td class="p-3 font-bold font-mono">
                                 <button onclick="window.openReceiptModal(window.transactions.find(t => t.id === '${tx.id}'))" class="text-blue-600 hover:text-blue-800 underline flex items-center gap-1" title="Lihat Bon Struk">
-                                    <i class="fa-solid fa-receipt"></i> ${tx.id}
+                                    <i class="fa-solid fa-receipt text-blue-500"></i> ${tx.id}
                                 </button>
                             </td>
                             <td class="p-3 font-bold text-slate-700">${tx.method || tx.paymentMethod || 'QRIS'}</td>
                             <td class="p-3 text-slate-600">${window.normalizeArray(tx.items).map(i => `${i.name} (x${i.qty})`).join(', ')}</td>
                             <td class="p-3 font-bold text-slate-800">${tx.customer || tx.customerName || 'Umum'}</td>
-                            <td class="p-3 text-right font-extrabold text-slate-900">Rp ${Number(tx.grandTotal || 0).toLocaleString('id-ID')}</td>
+                            <td class="p-3 text-right font-extrabold text-slate-900">Rp ${Number(tx.grandTotal || tx.total || 0).toLocaleString('id-ID')}</td>
                             <td class="p-3 text-center space-x-1">
                                 <button onclick="window.openReceiptModal(window.transactions.find(t => t.id === '${tx.id}'))" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs" title="Lihat & Cetak Bon Struk"><i class="fa-solid fa-print"></i></button>
                                 <button onclick="window.openModalDeleteTx('${tx.id}')" class="spv-only p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs" title="Void Transaksi"><i class="fa-solid fa-trash"></i></button>
@@ -2057,6 +2145,56 @@
             }
         };
 
+        window.openPriceListPrintModal = function() {
+            const container = document.getElementById('priceListContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center space-y-1 pb-4 border-b border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-900 uppercase tracking-wide">Katalog Price List Resmi Bazaar</h2>
+                        <p class="text-xs text-slate-500">AnyMind Group • Realtime Central Catalog</p>
+                    </div>
+                    <table class="w-full text-left text-xs mt-4">
+                        <thead class="bg-slate-100 text-slate-700 font-bold">
+                            <tr>
+                                <th class="p-2 border">Barcode / SKU</th>
+                                <th class="p-2 border">Nama Barang</th>
+                                <th class="p-2 border">Brand</th>
+                                <th class="p-2 border">Subsidiary</th>
+                                <th class="p-2 border text-right">Harga Normal</th>
+                                <th class="p-2 border text-center">Stok</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            ${window.normalizeArray(window.products).map(p => `
+                                <tr>
+                                    <td class="p-2 border font-mono">${p.sku}<br><span class="text-[10px] text-slate-400">${p.barcode || '-'}</span></td>
+                                    <td class="p-2 border font-bold">${p.name}</td>
+                                    <td class="p-2 border">${p.brand}</td>
+                                    <td class="p-2 border">${p.subsidiary}</td>
+                                    <td class="p-2 border text-right font-bold text-blue-700">Rp ${Number(p.price || 0).toLocaleString('id-ID')}</td>
+                                    <td class="p-2 border text-center font-bold">${p.stock} Pcs</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+            document.getElementById('modalPriceListPrint')?.classList.remove('hidden');
+        };
+
+        window.closePriceListPrintModal = function() {
+            document.getElementById('modalPriceListPrint')?.classList.add('hidden');
+        };
+
+        window.printPriceList = function() {
+            const container = document.getElementById('priceListContainer');
+            const printArea = document.getElementById('printableArea');
+            if (printArea && container) {
+                printArea.innerHTML = container.innerHTML;
+                window.print();
+            }
+        };
+
         window.exportPriceListCSV = function() {
             let csv = "Barcode,SKU,Brand,Subsidiary,Nama Barang,Harga Jual,Sisa Stok,Promo Tag\n";
             window.normalizeArray(window.products).forEach(p => {
@@ -2095,7 +2233,7 @@
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const logoData = evt.target.result;
-                localStorage.setItem('custom_bazaar_logo', logoData);
+                window.safeLocalStorage.setItem('custom_bazaar_logo', logoData);
                 const wrapper = document.getElementById('logoIconWrapper');
                 if (wrapper) wrapper.innerHTML = `<img src="${logoData}" class="w-8 h-8 object-contain rounded-lg">`;
                 document.getElementById('resetLogoBtn')?.classList.remove('hidden');
@@ -2105,7 +2243,7 @@
         };
 
         window.resetLogo = function() {
-            localStorage.removeItem('custom_bazaar_logo');
+            window.safeLocalStorage.removeItem('custom_bazaar_logo');
             location.reload();
         };
 
@@ -2157,11 +2295,943 @@
         window.openChangePinModal = function() { document.getElementById('modalChangePin')?.classList.remove('hidden'); };
         window.closeChangePinModal = function() { document.getElementById('modalChangePin')?.classList.add('hidden'); };
 
-        window.openScannerModal = function() { document.getElementById('modalScanner')?.classList.remove('hidden'); };
-        window.closeScannerModal = function() { document.getElementById('modalScanner')?.classList.add('hidden'); };
+        window.saveNewPin = function(e) {
+            e.preventDefault();
+            const target = document.getElementById('pinTargetSelect')?.value;
+            const oldPin = document.getElementById('oldPinInput')?.value;
+            const newPin = document.getElementById('newPinInput')?.value;
 
-        window.openModalInbound = function() { document.getElementById('modalInbound')?.classList.remove('hidden'); };
+            if (oldPin !== window.spvPin) {
+                window.showToast('Otorisasi PIN SPV Gagal!', 'error');
+                return;
+            }
+
+            if (target === 'SPV') {
+                window.spvPin = newPin;
+                window.safeLocalStorage.setItem('spv_pin', newPin);
+            } else {
+                window.kasirPin = newPin;
+                window.safeLocalStorage.setItem('kasir_pin', newPin);
+            }
+
+            window.closeChangePinModal();
+            window.showToast(`PIN ${target} berhasil diperbarui!`, 'info');
+        };
+
+        window.openScannerModal = function() {
+            document.getElementById('modalScanner')?.classList.remove('hidden');
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                    .then(stream => {
+                        const video = document.getElementById('scannerVideo');
+                        if (video) {
+                            video.srcObject = stream;
+                            window.scannerStream = stream;
+                        }
+                    })
+                    .catch(err => { console.warn('Camera stream error:', err); });
+            }
+        };
+
+        window.closeScannerModal = function() {
+            document.getElementById('modalScanner')?.classList.add('hidden');
+            if (window.scannerStream) {
+                window.scannerStream.getTracks().forEach(track => track.stop());
+                window.scannerStream = null;
+            }
+        };
+
+        window.openModalInbound = function() {
+            window.filterInboundSkuOptions();
+            document.getElementById('modalInbound')?.classList.remove('hidden');
+        };
         window.closeModalInbound = function() { document.getElementById('modalInbound')?.classList.add('hidden'); };
+
+        window.openModalAdjustment = function() {
+            window.filterAdjustSkuOptions();
+            document.getElementById('modalAdjustment')?.classList.remove('hidden');
+        };
+        window.closeModalAdjustment = function() { document.getElementById('modalAdjustment')?.classList.add('hidden'); };
+
+        window.openModalStockMovement = function() {
+            window.renderStockMovementTable();
+            document.getElementById('modalStockMovement')?.classList.remove('hidden');
+        };
+        window.closeModalStockMovement = function() { document.getElementById('modalStockMovement')?.classList.add('hidden'); };
+
+        window.openModalDeleteAllSKU = function() {
+            const count = window.normalizeArray(window.products).length;
+            document.getElementById('deleteAllCountText').innerText = count.toString();
+            document.getElementById('modalDeleteAllSKU')?.classList.remove('hidden');
+        };
+        window.closeModalDeleteAllSKU = function() { document.getElementById('modalDeleteAllSKU')?.classList.add('hidden'); };
+
+        window.confirmDeleteAllSKU = function() {
+            window.products = [];
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
+
+            window.closeModalDeleteAllSKU();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.updateBadgeCounts();
+            window.showToast('Seluruh SKU berhasil dihapus!', 'info');
+        };
+
+        window.openModalBulkExcel = function() { document.getElementById('modalBulkExcel')?.classList.remove('hidden'); };
+        window.closeModalBulkExcel = function() { document.getElementById('modalBulkExcel')?.classList.add('hidden'); };
+
+        window.openFirebaseModal = function() { document.getElementById('modalFirebase')?.classList.remove('hidden'); };
+        window.closeFirebaseModal = function() { document.getElementById('modalFirebase')?.classList.add('hidden'); };
+
+        window.saveFirebaseConfig = function() {
+            const text = document.getElementById('firebaseConfigInput')?.value.trim();
+            if (!text) {
+                window.showToast('Konfigurasi kosong!', 'warning');
+                return;
+            }
+            try {
+                window.safeLocalStorage.setItem('custom_firebase_config', text);
+                window.closeFirebaseModal();
+                window.showToast('Firebase Config disimpan. Memuat ulang...', 'info');
+                setTimeout(() => location.reload(), 800);
+            } catch(e) {
+                window.showToast('Gagal menyimpan config Firebase', 'error');
+            }
+        };
+
+        window.openModalDeleteTx = function(txId) {
+            window.pendingDeleteTxId = txId;
+            document.getElementById('deleteTxIdText').innerText = txId;
+            document.getElementById('modalDeleteTx')?.classList.remove('hidden');
+        };
+        window.closeModalDeleteTx = function() { document.getElementById('modalDeleteTx')?.classList.add('hidden'); };
+
+        window.confirmDeleteTransaction = function() {
+            if (!window.pendingDeleteTxId) return;
+            const txIndex = window.transactions.findIndex(t => t.id === window.pendingDeleteTxId);
+            if (txIndex !== -1) {
+                const tx = window.transactions[txIndex];
+                window.normalizeArray(tx.items).forEach(item => {
+                    const prod = window.products.find(p => String(p.id) === String(item.id));
+                    if (prod) prod.stock += item.qty;
+                });
+                window.transactions.splice(txIndex, 1);
+                window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+                window.safeLocalStorage.setItem('bazaar_transactions', JSON.stringify(window.transactions));
+                if (window.firebaseDb) {
+                    window.firebaseDb.ref('products').set(window.products);
+                    window.firebaseDb.ref('transactions').set(window.transactions);
+                }
+            }
+            window.closeModalDeleteTx();
+            window.renderReports();
+            window.renderCatalog();
+            window.showToast('Transaksi berhasil dibatalkan!', 'info');
+        };
+
+        window.switchInboundTab = function(tab) {
+            const singleForm = document.getElementById('formInboundSingle');
+            const bulkForm = document.getElementById('formInboundBulk');
+            const singleBtn = document.getElementById('inboundTabSingleBtn');
+            const bulkBtn = document.getElementById('inboundTabBulkBtn');
+
+            if (tab === 'single') {
+                singleForm?.classList.remove('hidden');
+                bulkForm?.classList.add('hidden');
+                if (singleBtn) singleBtn.className = 'px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition';
+                if (bulkBtn) bulkBtn.className = 'px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+                window.filterInboundSkuOptions();
+            } else {
+                singleForm?.classList.add('hidden');
+                bulkForm?.classList.remove('hidden');
+                if (singleBtn) singleBtn.className = 'px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+                if (bulkBtn) bulkBtn.className = 'px-3 py-1.5 rounded-lg bg-emerald-600 text-white transition';
+            }
+        };
+
+        window.filterInboundSkuOptions = function() {
+            const select = document.getElementById('inboundSkuSelect');
+            const query = (document.getElementById('inboundSearchInput')?.value || '').toLowerCase().trim();
+            if (!select) return;
+
+            const prods = window.normalizeArray(window.products);
+            const matches = prods.filter(p =>
+                String(p.name || '').toLowerCase().includes(query) ||
+                String(p.sku || '').toLowerCase().includes(query) ||
+                String(p.barcode || '').toLowerCase().includes(query) ||
+                String(p.brand || '').toLowerCase().includes(query)
+            );
+
+            select.innerHTML = matches.length ? matches.map(p => `
+                <option value="${p.id}">${p.sku} - ${p.name} (${p.brand}) [Stok: ${p.stock}]</option>
+            `).join('') : '<option value="">-- Tidak ada produk ditemukan --</option>';
+
+            window.handleInboundSelectChange();
+        };
+
+        window.handleInboundSelectChange = function() {
+            const id = document.getElementById('inboundSkuSelect')?.value;
+            const box = document.getElementById('inboundSkuInfoBox');
+            const prods = window.normalizeArray(window.products);
+            const prod = prods.find(p => String(p.id) === String(id));
+
+            if (prod && box) {
+                box.classList.remove('hidden');
+                document.getElementById('inboundInfoName').innerText = prod.name;
+                document.getElementById('inboundInfoStock').innerText = `Stok Saat Ini: ${prod.stock} pcs`;
+            } else if (box) {
+                box.classList.add('hidden');
+            }
+        };
+
+        window.saveInboundStock = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('inboundSkuSelect')?.value;
+            const qty = parseInt(document.getElementById('inboundQty')?.value) || 0;
+            const refNo = document.getElementById('inboundRefNo')?.value.trim();
+            const notes = document.getElementById('inboundNotes')?.value.trim();
+
+            const prods = window.normalizeArray(window.products);
+            const prod = prods.find(p => String(p.id) === String(id));
+            if (!prod) {
+                window.showToast('Pilih SKU yang valid!', 'error');
+                return;
+            }
+
+            prod.stock += qty;
+            window.logStockMovement(prod.sku, prod.name, `+${qty}`, prod.stock, 'INBOUND', refNo, notes);
+
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
+
+            window.closeModalInbound();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.showToast(`Restock ${qty} pcs ${prod.name} berhasil!`, 'info');
+        };
+
+        window.handleBulkInboundFileUpload = function(e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = evt.target.result;
+                if (typeof XLSX !== 'undefined') {
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const firstSheet = workbook.SheetNames[0];
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1 });
+                    window.processBulkInboundRows(rows);
+                } else {
+                    window.showToast('Library Excel tidak tersedia', 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        };
+
+        window.processBulkInboundPaste = function() {
+            const text = document.getElementById('bulkInboundPasteText')?.value.trim();
+            if (!text) {
+                window.showToast('Masukkan teks data restock!', 'warning');
+                return;
+            }
+            const rows = text.split('\n').map(r => r.split('\t').length > 1 ? r.split('\t') : r.split(','));
+            window.processBulkInboundRows(rows);
+        };
+
+        window.processBulkInboundRows = function(rows) {
+            let successCount = 0;
+            const prods = window.normalizeArray(window.products);
+            rows.forEach(r => {
+                if (!r || r.length < 2) return;
+                const key = String(r[0]).trim().toLowerCase();
+                const qty = parseInt(r[1]) || 0;
+                const refNo = r[2] ? String(r[2]).trim() : 'BULK-INBOUND';
+                const notes = r[3] ? String(r[3]).trim() : 'Restock Bulk Excel';
+
+                const prod = prods.find(p => 
+                    (p.barcode && String(p.barcode).toLowerCase() === key) || String(p.sku).toLowerCase() === key
+                );
+
+                if (prod && qty > 0) {
+                    prod.stock += qty;
+                    window.logStockMovement(prod.sku, prod.name, `+${qty}`, prod.stock, 'INBOUND', refNo, notes);
+                    successCount++;
+                }
+            });
+
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
+
+            window.closeModalInbound();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.showToast(`Berhasil restock ${successCount} item SKU!`, 'info');
+        };
+
+        window.filterAdjustSkuOptions = function() {
+            const select = document.getElementById('adjustSkuSelect');
+            const query = (document.getElementById('adjustSearchInput')?.value || '').toLowerCase().trim();
+            if (!select) return;
+
+            const prods = window.normalizeArray(window.products);
+            const matches = prods.filter(p =>
+                String(p.name || '').toLowerCase().includes(query) ||
+                String(p.sku || '').toLowerCase().includes(query) ||
+                String(p.barcode || '').toLowerCase().includes(query) ||
+                String(p.brand || '').toLowerCase().includes(query)
+            );
+
+            select.innerHTML = matches.length ? matches.map(p => `
+                <option value="${p.id}">${p.sku} - ${p.name} (${p.brand}) [Stok: ${p.stock}]</option>
+            `).join('') : '<option value="">-- Tidak ada produk ditemukan --</option>';
+
+            window.handleAdjustSelectChange();
+        };
+
+        window.handleAdjustSelectChange = function() {
+            const id = document.getElementById('adjustSkuSelect')?.value;
+            const box = document.getElementById('adjustSkuInfoBox');
+            const prods = window.normalizeArray(window.products);
+            const prod = prods.find(p => String(p.id) === String(id));
+
+            if (prod && box) {
+                box.classList.remove('hidden');
+                document.getElementById('adjustInfoName').innerText = prod.name;
+                document.getElementById('adjustInfoStock').innerText = `Stok Sistem Saat Ini: ${prod.stock} pcs`;
+            } else if (box) {
+                box.classList.add('hidden');
+            }
+        };
+
+        window.saveStockAdjustment = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('adjustSkuSelect')?.value;
+            const targetStock = parseInt(document.getElementById('adjustTargetStock')?.value);
+            const reason = document.getElementById('adjustReasonSelect')?.value;
+            const notes = document.getElementById('adjustNotes')?.value.trim();
+
+            const prods = window.normalizeArray(window.products);
+            const prod = prods.find(p => String(p.id) === String(id));
+            if (!prod || isNaN(targetStock)) {
+                window.showToast('Data opname tidak valid!', 'error');
+                return;
+            }
+
+            const diff = targetStock - prod.stock;
+            const changeStr = diff >= 0 ? `+${diff}` : `${diff}`;
+            prod.stock = targetStock;
+
+            window.logStockMovement(prod.sku, prod.name, changeStr, prod.stock, 'ADJUSTMENT', reason, notes);
+
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
+
+            window.closeModalAdjustment();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.showToast(`Opname stok ${prod.sku} disesuaikan menjadi ${targetStock} pcs!`, 'info');
+        };
+
+        window.logStockMovement = function(sku, name, changeQtyStr, finalStock, type, refNo, notes) {
+            const now = new Date();
+            const timestamp = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            
+            window.stockMovements.unshift({
+                timestamp, sku, name, changeQtyStr, finalStock, type, refNo: refNo || '-', notes: notes || '-'
+            });
+
+            window.safeLocalStorage.setItem('bazaar_stock_movements', JSON.stringify(window.stockMovements));
+            if (window.firebaseDb) window.firebaseDb.ref('stockMovements').set(window.stockMovements);
+        };
+
+        window.renderStockMovementTable = function() {
+            const tbody = document.getElementById('stockMovementTableBody');
+            const query = (document.getElementById('stockMovementSearch')?.value || '').toLowerCase().trim();
+            if (!tbody) return;
+
+            const movements = window.normalizeArray(window.stockMovements);
+            const filtered = movements.filter(m =>
+                String(m.sku || '').toLowerCase().includes(query) ||
+                String(m.name || '').toLowerCase().includes(query) ||
+                String(m.type || '').toLowerCase().includes(query) ||
+                String(m.refNo || '').toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 text-xs">Belum ada catatan mutasi stok.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(m => `
+                <tr class="hover:bg-slate-50 text-xs">
+                    <td class="p-3 text-slate-500 font-mono">${m.timestamp}</td>
+                    <td class="p-3"><div class="font-bold text-slate-800 font-mono">${m.sku}</div><div class="text-[10px] text-slate-500">${m.name}</div></td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${m.type === 'INBOUND' ? 'bg-emerald-100 text-emerald-800' : m.type === 'SALES' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}">${m.type}</span></td>
+                    <td class="p-3 text-center font-bold ${String(m.changeQtyStr).startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}">${m.changeQtyStr} Pcs</td>
+                    <td class="p-3 text-center font-bold text-slate-900">${m.finalStock} Pcs</td>
+                    <td class="p-3 text-slate-600"><div class="font-bold font-mono text-[10px]">${m.refNo}</div><div class="text-[10px] text-slate-400">${m.notes}</div></td>
+                </tr>
+            `).join('');
+        };
+
+        window.exportStockMovementToCSV = function() {
+            let csv = "Waktu,SKU,Nama Barang,Tipe Mutasi,Perubahan Qty,Stok Akhir,Referensi,Catatan\n";
+            window.normalizeArray(window.stockMovements).forEach(m => {
+                csv += `"${m.timestamp}","${m.sku}","${String(m.name||'').replace(/"/g, '""')}","${m.type}","${m.changeQtyStr}",${m.finalStock},"${m.refNo}","${String(m.notes||'').replace(/"/g, '""')}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `Mutasi_Stok_Bazaar_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        window.openModalPromo = function() {
+            if (window.currentRole === 'UMUM') {
+                document.getElementById('modalSpvPin')?.classList.remove('hidden');
+                return;
+            }
+            document.getElementById('formPromo')?.reset();
+            const editEl = document.getElementById('promoEditId');
+            if (editEl) editEl.value = '';
+            const title = document.getElementById('modalPromoTitle');
+            if (title) title.innerText = 'Buat Program Promo Baru';
+            
+            const skuContainer = document.getElementById('promoSKUCheckboxList');
+            if (skuContainer) {
+                skuContainer.innerHTML = window.normalizeArray(window.products).map(p => `
+                    <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                        <input type="checkbox" name="promoSKUs" value="${p.sku}" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span><b>${p.sku}</b> - ${p.name} (${p.brand})</span>
+                    </label>
+                `).join('');
+            }
+
+            document.getElementById('modalPromo')?.classList.remove('hidden');
+        };
+
+        window.closeModalPromo = function() {
+            document.getElementById('modalPromo')?.classList.add('hidden');
+        };
+
+        window.handlePromoTypeChange = function() {
+            const type = document.getElementById('promoTypeSelect')?.value;
+            const pkgBox = document.getElementById('promoPaketConfigContainer');
+            if (pkgBox) {
+                if (type === 'PAKET_PROMO') pkgBox.classList.remove('hidden'); else pkgBox.classList.add('hidden');
+            }
+        };
+
+        window.editPromo = function(id) {
+            const promo = window.normalizeArray(window.promos).find(p => String(p.id) === String(id));
+            if (!promo) return;
+
+            document.getElementById('promoEditId').value = promo.id;
+            document.getElementById('promoName').value = promo.name || '';
+            document.getElementById('promoTypeSelect').value = promo.type || 'PAKET_PROMO';
+            document.getElementById('promoBadgeTag').value = promo.badge || '';
+            document.getElementById('promoBundleQty').value = promo.bundleQty || 1;
+            document.getElementById('promoBundlePrice').value = promo.bundlePrice || 0;
+
+            window.handlePromoTypeChange();
+
+            const skuContainer = document.getElementById('promoSKUCheckboxList');
+            if (skuContainer) {
+                const checkedSkus = window.normalizeArray(promo.skus);
+                skuContainer.innerHTML = window.normalizeArray(window.products).map(p => {
+                    const checked = checkedSkus.includes(p.sku) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                            <input type="checkbox" name="promoSKUs" value="${p.sku}" ${checked} class="rounded text-blue-600 focus:ring-blue-500">
+                            <span><b>${p.sku}</b> - ${p.name} (${p.brand})</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            const title = document.getElementById('modalPromoTitle');
+            if (title) title.innerText = 'Edit Program Promo';
+
+            document.getElementById('modalPromo')?.classList.remove('hidden');
+        };
+
+        window.savePromoProgram = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('promoName')?.value.trim();
+            const type = document.getElementById('promoTypeSelect')?.value;
+            const badge = document.getElementById('promoBadgeTag')?.value.trim();
+            const bundleQty = parseInt(document.getElementById('promoBundleQty')?.value) || 1;
+            const bundlePrice = parseFloat(document.getElementById('promoBundlePrice')?.value) || 0;
+
+            const selectedSKUs = Array.from(document.querySelectorAll('input[name="promoSKUs"]:checked')).map(cb => cb.value);
+
+            const editId = document.getElementById('promoEditId')?.value;
+            if (editId) {
+                const target = window.promos.find(p => String(p.id) === String(editId));
+                if (target) {
+                    target.name = name;
+                    target.type = type;
+                    target.badge = badge;
+                    target.bundleQty = bundleQty;
+                    target.bundlePrice = bundlePrice;
+                    target.skus = selectedSKUs;
+                }
+            } else {
+                const newPromo = {
+                    id: 'PROMO-' + Date.now(),
+                    name, type, badge, bundleQty, bundlePrice, skus: selectedSKUs
+                };
+                window.promos.unshift(newPromo);
+            }
+
+            window.safeLocalStorage.setItem('bazaar_promos', JSON.stringify(window.promos));
+            if (window.firebaseDb) window.firebaseDb.ref('promos').set(window.promos);
+
+            window.closeModalPromo();
+            window.renderPromoList();
+            window.renderPublicPromoHighlights();
+            window.renderCatalog();
+            window.updateBadgeCounts();
+            window.showToast('Program promo berhasil disimpan!', 'info');
+        };
+
+        window.deletePromo = function(id) {
+            if (window.currentRole !== 'SPV') return;
+            window.promos = window.promos.filter(p => String(p.id) !== String(id));
+            window.safeLocalStorage.setItem('bazaar_promos', JSON.stringify(window.promos));
+            if (window.firebaseDb) window.firebaseDb.ref('promos').set(window.promos);
+            window.renderPromoList();
+            window.renderPublicPromoHighlights();
+            window.renderCatalog();
+            window.updateBadgeCounts();
+            window.showToast('Promo Dihapus!', 'info');
+        };
+
+        window.renderPromoList = function() {
+            const container = document.getElementById('promoProgramList');
+            if (!container) return;
+
+            const promoList = window.normalizeArray(window.promos);
+            if (promoList.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white p-8 rounded-2xl text-center text-slate-400 space-y-2 border border-slate-200">
+                        <i class="fa-solid fa-tags text-3xl opacity-40"></i>
+                        <p class="text-xs font-semibold">Belum ada program promo dibuat</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = promoList.map(p => `
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-extrabold uppercase">${p.badge}</span>
+                            <div class="flex items-center gap-1.5 spv-only">
+                                <button onclick="window.editPromo('${p.id}')" class="text-slate-400 hover:text-blue-600 transition text-xs p-1" title="Edit Promo"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="window.deletePromo('${p.id}')" class="text-slate-400 hover:text-rose-600 transition text-xs p-1" title="Hapus Promo"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-xs text-slate-900 pt-1">${p.name}</h4>
+                        <div class="text-[11px] text-purple-700 font-extrabold">
+                            Paket ${p.bundleQty || 1} Pcs = Rp ${Number(p.bundlePrice || 0).toLocaleString('id-ID')}
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-slate-500 border-t border-slate-100 pt-2">
+                        SKU Ikut: <b>${window.normalizeArray(p.skus).join(', ')}</b>
+                    </div>
+                </div>
+            `).join('');
+
+            window.applyRolePermissions();
+        };
+
+        window.openModalThresholdPromo = function() {
+            if (window.currentRole === 'UMUM') {
+                document.getElementById('modalSpvPin')?.classList.remove('hidden');
+                return;
+            }
+            document.getElementById('formThresholdPromo')?.reset();
+            const editEl = document.getElementById('thresholdEditId');
+            if (editEl) editEl.value = '';
+            const title = document.getElementById('modalThresholdTitle');
+            if (title) title.innerText = 'Tambah Program Minimal Belanja';
+            window.handleThresholdTypeChange();
+            document.getElementById('modalThresholdPromo')?.classList.remove('hidden');
+        };
+
+        window.closeModalThresholdPromo = function() {
+            document.getElementById('modalThresholdPromo')?.classList.add('hidden');
+        };
+
+        window.handleThresholdTypeChange = function() {
+            const typeSelect = document.getElementById('thresholdTypeSelect');
+            const container = document.getElementById('thresholdValueContainer');
+            const labelEl = document.getElementById('thresholdValueLabel');
+            const valInput = document.getElementById('thresholdDiscountValue');
+            if (!typeSelect || !container) return;
+            const type = typeSelect.value;
+            if (type === 'PERCENT') {
+                container.classList.remove('hidden');
+                if (labelEl) labelEl.innerText = 'Nilai Diskon Persentase (%) *';
+                if (valInput) valInput.placeholder = '10';
+            } else if (type === 'NOMINAL') {
+                container.classList.remove('hidden');
+                if (labelEl) labelEl.innerText = 'Nilai Potongan Diskon (Rp) *';
+                if (valInput) valInput.placeholder = '25000';
+            } else { 
+                container.classList.add('hidden');
+            }
+        };
+
+        window.editThresholdPromo = function(id) {
+            const threshold = window.normalizeArray(window.thresholdPromos).find(t => String(t.id) === String(id));
+            if (!threshold) return;
+
+            document.getElementById('thresholdEditId').value = threshold.id;
+            document.getElementById('thresholdName').value = threshold.name || '';
+            document.getElementById('thresholdTypeSelect').value = threshold.type || 'PERCENT';
+            document.getElementById('thresholdMinAmount').value = threshold.minAmount || 0;
+            document.getElementById('thresholdDiscountValue').value = threshold.value || 0;
+            document.getElementById('thresholdLabel').value = threshold.label || '';
+
+            window.handleThresholdTypeChange();
+
+            const title = document.getElementById('modalThresholdTitle');
+            if (title) title.innerText = 'Edit Program Minimal Belanja';
+
+            document.getElementById('modalThresholdPromo')?.classList.remove('hidden');
+        };
+
+        window.saveThresholdPromo = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('thresholdName')?.value.trim();
+            const type = document.getElementById('thresholdTypeSelect')?.value || 'PERCENT';
+            const minAmount = parseFloat(document.getElementById('thresholdMinAmount')?.value) || 0;
+            const value = parseFloat(document.getElementById('thresholdDiscountValue')?.value) || 0;
+            const label = document.getElementById('thresholdLabel')?.value.trim();
+            const editId = document.getElementById('thresholdEditId')?.value;
+
+            if (editId) {
+                const target = window.thresholdPromos.find(t => String(t.id) === String(editId));
+                if (target) {
+                    target.name = name;
+                    target.type = type;
+                    target.minAmount = minAmount;
+                    target.value = value;
+                    target.rewardCount = value;
+                    target.label = label;
+                }
+            } else {
+                window.thresholdPromos.push({
+                    id: 'THRES-' + Date.now(),
+                    name, type, minAmount, value, rewardCount: value, label
+                });
+            }
+
+            window.safeLocalStorage.setItem('bazaar_thresholds', JSON.stringify(window.thresholdPromos));
+            if (window.firebaseDb) window.firebaseDb.ref('thresholds').set(window.thresholdPromos);
+
+            window.closeModalThresholdPromo();
+            window.renderThresholdPromoList();
+            window.renderCart();
+            window.showToast('Program Minimal Belanja Disimpan!', 'info');
+        };
+
+        window.deleteThresholdPromo = function(id) {
+            if (window.currentRole !== 'SPV') return;
+            window.thresholdPromos = window.thresholdPromos.filter(t => String(t.id) !== String(id));
+            window.safeLocalStorage.setItem('bazaar_thresholds', JSON.stringify(window.thresholdPromos));
+            if (window.firebaseDb) window.firebaseDb.ref('thresholds').set(window.thresholdPromos);
+            window.renderThresholdPromoList();
+            window.showToast('Program Minimal Belanja Dihapus!', 'info');
+        };
+
+        window.renderThresholdPromoList = function() {
+            const container = document.getElementById('thresholdPromoList');
+            if (!container) return;
+
+            const thresList = window.normalizeArray(window.thresholdPromos);
+            if (thresList.length === 0) {
+                container.innerHTML = `<p class="col-span-full text-xs text-slate-400 italic">Belum ada program minimal belanja.</p>`;
+                return;
+            }
+
+            container.innerHTML = thresList.map(t => `
+                <div class="bg-amber-50/80 border border-amber-200 p-3.5 rounded-2xl space-y-2 flex items-center justify-between">
+                    <div>
+                        <span class="font-extrabold text-xs text-amber-900 block">${t.name}</span>
+                        <div class="text-[11px] text-amber-800 font-semibold">
+                            Min. Rp ${Number(t.minAmount).toLocaleString('id-ID')} → ${t.label}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 spv-only shrink-0">
+                        <button onclick="window.editThresholdPromo('${t.id}')" class="text-amber-700 hover:text-blue-600 text-xs p-1" title="Edit Program"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="window.deleteThresholdPromo('${t.id}')" class="text-amber-700 hover:text-rose-600 text-xs p-1" title="Hapus Program"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
+            `).join('');
+
+            window.applyRolePermissions();
+        };
+
+        window.openClaimGimmickModal = function(quota) {
+            document.getElementById('gimmickQuotaBadgeModal').innerText = `Sisa Kuota: ${quota} Pcs`;
+            window.renderGimmickPickerList();
+            document.getElementById('modalClaimGimmick')?.classList.remove('hidden');
+        };
+
+        window.closeClaimGimmickModal = function() {
+            document.getElementById('modalClaimGimmick')?.classList.add('hidden');
+        };
+
+        window.renderGimmickPickerList = function() {
+            const container = document.getElementById('gimmickPickerContainer');
+            const searchVal = (document.getElementById('gimmickSearchInput')?.value || '').toLowerCase().trim();
+            const zeroOnly = document.getElementById('gimmickZeroPriceOnly')?.checked;
+
+            if (!container) return;
+
+            const prods = window.normalizeArray(window.products);
+            const filtered = prods.filter(p => {
+                const matchesSearch = String(p.name || '').toLowerCase().includes(searchVal) || String(p.sku || '').toLowerCase().includes(searchVal);
+                const matchesPrice = !zeroOnly || p.price === 0;
+                return matchesSearch && matchesPrice;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">Tidak ada item bonus gimmick cocok.</p>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => `
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-2">
+                    <div>
+                        <span class="font-bold text-xs text-slate-800 block">${p.name}</span>
+                        <span class="text-[10px] text-slate-500 font-mono">${p.sku} • Harga: Rp ${Number(p.price||0).toLocaleString('id-ID')} • Stok: ${p.stock}</span>
+                    </div>
+                    <button onclick="window.claimGimmickItem('${p.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition shrink-0">
+                        + Klaim Rp 0
+                    </button>
+                </div>
+            `).join('');
+        };
+
+        window.claimGimmickItem = function(id) {
+            const prods = window.normalizeArray(window.products);
+            const prod = prods.find(p => String(p.id) === String(id));
+            if (!prod || prod.stock <= 0) {
+                window.showToast('Stok bonus habis!', 'warning');
+                return;
+            }
+
+            window.cart.push({
+                id: prod.id,
+                sku: prod.sku,
+                name: `[BONUS GIMMICK] ${prod.name}`,
+                brand: prod.brand,
+                price: 0,
+                qty: 1
+            });
+
+            window.renderCart();
+            window.showToast(`Bonus ${prod.name} ditambahkan!`, 'info');
+            window.closeClaimGimmickModal();
+        };
+
+        window.renderMasterTable = function() {
+            const tbody = document.getElementById('masterTableBody');
+            const searchVal = (document.getElementById('masterSearch')?.value || '').toLowerCase().trim();
+
+            if (!tbody) return;
+
+            const prods = window.normalizeArray(window.products);
+            const filtered = prods.filter(p => 
+                String(p.name || '').toLowerCase().includes(searchVal) ||
+                String(p.sku || '').toLowerCase().includes(searchVal) ||
+                String(p.barcode || '').toLowerCase().includes(searchVal) ||
+                String(p.brand || '').toLowerCase().includes(searchVal)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 text-xs">Tidak ada SKU terdaftar.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => `
+                <tr class="hover:bg-slate-50 text-xs">
+                    <td class="p-3.5"><div class="font-bold text-slate-800 font-mono">${p.sku}</div><div class="text-[10px] text-slate-400 font-mono">${p.barcode || '-'}</div></td>
+                    <td class="p-3.5 font-bold text-slate-900">${p.name}</td>
+                    <td class="p-3.5"><span class="font-bold text-slate-700">${p.brand}</span> <span class="text-slate-400">(${p.subsidiary})</span></td>
+                    <td class="p-3.5 font-extrabold text-blue-700">Rp ${Number(p.price || 0).toLocaleString('id-ID')}</td>
+                    <td class="p-3.5 font-bold ${p.stock > 10 ? 'text-emerald-600' : p.stock > 0 ? 'text-amber-600' : 'text-rose-600'}">${p.stock} Pcs</td>
+                    <td class="p-3.5"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-[10px]">${p.promoTag || '-'}</span></td>
+                    <td class="p-3.5 text-right space-x-1">
+                        <button onclick="window.editSKU('${p.id}')" class="spv-only p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold" title="Edit SKU"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="window.deleteSKU('${p.id}')" class="spv-only p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            window.applyRolePermissions();
+        };
+
+        window.openModalAddSKU = function() {
+            document.getElementById('formAddSKU')?.reset();
+            document.getElementById('skuEditId').value = '';
+            document.getElementById('modalSKUTitle').innerText = 'Tambah SKU Baru';
+            document.getElementById('modalAddSKU')?.classList.remove('hidden');
+        };
+
+        window.closeModalAddSKU = function() { document.getElementById('modalAddSKU')?.classList.add('hidden'); };
+
+        window.saveSingleSKU = function(e) {
+            e.preventDefault();
+            const id = document.getElementById('skuEditId')?.value;
+            const barcode = document.getElementById('skuBarcode')?.value.trim();
+            const sku = document.getElementById('skuCode')?.value.trim();
+            const name = document.getElementById('skuName')?.value.trim();
+            const brand = document.getElementById('skuBrand')?.value.trim();
+            const subsidiary = document.getElementById('skuSubsidiary')?.value.trim();
+            const price = parseFloat(document.getElementById('skuPrice')?.value) || 0;
+            const stock = parseInt(document.getElementById('skuStock')?.value) || 0;
+            const promoTag = document.getElementById('skuPromoTag')?.value.trim();
+
+            const prods = window.normalizeArray(window.products);
+            if (id) {
+                const prod = prods.find(p => String(p.id) === String(id));
+                if (prod) {
+                    prod.barcode = barcode; prod.sku = sku; prod.name = name; prod.brand = brand;
+                    prod.subsidiary = subsidiary; prod.price = price; prod.stock = stock; prod.promoTag = promoTag;
+                }
+            } else {
+                prods.push({
+                    id: 'PROD-' + Date.now(),
+                    barcode, sku, name, brand, subsidiary, price, stock, promoTag
+                });
+            }
+
+            window.products = prods;
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
+
+            window.closeModalAddSKU();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.updateBadgeCounts();
+            window.showToast('Data SKU berhasil disimpan!', 'info');
+        };
+
+        window.editSKU = function(id) {
+            const prods = window.normalizeArray(window.products);
+            const prod = prods.find(p => String(p.id) === String(id));
+            if (!prod) return;
+
+            document.getElementById('skuEditId').value = prod.id;
+            document.getElementById('skuBarcode').value = prod.barcode || '';
+            document.getElementById('skuCode').value = prod.sku;
+            document.getElementById('skuName').value = prod.name;
+            document.getElementById('skuBrand').value = prod.brand;
+            document.getElementById('skuSubsidiary').value = prod.subsidiary;
+            document.getElementById('skuPrice').value = prod.price;
+            document.getElementById('skuStock').value = prod.stock;
+            document.getElementById('skuPromoTag').value = prod.promoTag || '';
+
+            document.getElementById('modalSKUTitle').innerText = 'Edit SKU Produk';
+            document.getElementById('modalAddSKU')?.classList.remove('hidden');
+        };
+
+        window.deleteSKU = function(id) {
+            if (window.currentRole !== 'SPV') return;
+            window.products = window.normalizeArray(window.products).filter(p => String(p.id) !== String(id));
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.updateBadgeCounts();
+            window.showToast('SKU Dihapus!', 'info');
+        };
+
+        window.handleExcelFileUpload = function(e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = evt.target.result;
+                if (typeof XLSX !== 'undefined') {
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const firstSheet = workbook.SheetNames[0];
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { header: 1 });
+                    window.processBulkRows(rows);
+                } else {
+                    window.showToast('Library XLSX belum dimuat', 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        };
+
+        window.processBulkPaste = function() {
+            const text = document.getElementById('bulkPasteText')?.value.trim();
+            if (!text) {
+                window.showToast('Teks data SKU kosong!', 'warning');
+                return;
+            }
+            const rows = text.split('\n').map(r => r.split('\t').length > 1 ? r.split('\t') : r.split(','));
+            window.processBulkRows(rows);
+        };
+
+        window.processBulkRows = function(rows) {
+            let count = 0;
+            const prods = window.normalizeArray(window.products);
+            rows.forEach((r, idx) => {
+                if (!r || r.length < 5) return;
+                if (idx === 0 && String(r[0]).toLowerCase().includes('barcode')) return;
+
+                const barcode = String(r[0] || '').trim();
+                const sku = String(r[1] || '').trim();
+                const brand = String(r[2] || '').trim();
+                const subsidiary = String(r[3] || '').trim();
+                const name = String(r[4] || '').trim();
+                const price = parseFloat(r[5]) || 0;
+                const stock = parseInt(r[6]) || 0;
+                const promoTag = String(r[7] || '').trim();
+
+                if (sku && name) {
+                    const existing = prods.find(p => String(p.sku).toLowerCase() === sku.toLowerCase());
+                    if (existing) {
+                        existing.barcode = barcode || existing.barcode;
+                        existing.brand = brand || existing.brand;
+                        existing.subsidiary = subsidiary || existing.subsidiary;
+                        existing.name = name;
+                        existing.price = price;
+                        existing.stock = stock;
+                        existing.promoTag = promoTag || existing.promoTag;
+                    } else {
+                        prods.push({
+                            id: 'PROD-' + Date.now() + '-' + count,
+                            barcode, sku, brand, subsidiary, name, price, stock, promoTag
+                        });
+                    }
+                    count++;
+                }
+            });
+
+            window.products = prods;
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
+
+            window.closeModalBulkExcel();
+            window.renderCatalog();
+            window.renderMasterTable();
+            window.updateBadgeCounts();
+            window.showToast(`Berhasil memproses ${count} SKU!`, 'info');
+        };
 
         window.forceReloadData = function() {
             window.showToast('Memuat ulang data cloud...', 'info');
@@ -2169,7 +3239,7 @@
         };
 
         window.onload = function() {
-            const customLogo = localStorage.getItem('custom_bazaar_logo');
+            const customLogo = window.safeLocalStorage.getItem('custom_bazaar_logo');
             if (customLogo) {
                 const wrapper = document.getElementById('logoIconWrapper');
                 if (wrapper) {
@@ -2180,14 +3250,16 @@
 
             try {
                 if (typeof firebase !== 'undefined') {
-                    const customCfgText = localStorage.getItem('custom_firebase_config');
+                    const customCfgText = window.safeLocalStorage.getItem('custom_firebase_config');
                     let configToUse = DEFAULT_FIREBASE_CONFIG;
                     if (customCfgText) {
                         try {
                             configToUse = JSON.parse(customCfgText);
                         } catch(e) { console.error('Invalid JSON custom config:', e); }
                     }
-                    firebase.initializeApp(configToUse);
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(configToUse);
+                    }
                     window.firebaseDb = firebase.database();
                     
                     window.firebaseDb.ref('products').on('value', snapshot => {
@@ -2198,7 +3270,7 @@
                             window.renderMasterTable();
                             window.updateBadgeCounts();
                         }
-                    });
+                    }, err => { console.warn('Firebase sync error:', err); });
 
                     window.firebaseDb.ref('transactions').on('value', snapshot => {
                         const val = snapshot.val();
@@ -2211,7 +3283,7 @@
                                 window.renderReports();
                             }
                         }
-                    });
+                    }, err => { console.warn('Firebase sync error:', err); });
 
                     window.firebaseDb.ref('promos').on('value', snapshot => {
                         const val = snapshot.val();
@@ -2221,7 +3293,7 @@
                             window.renderPublicPromoHighlights();
                             window.renderCatalog();
                         }
-                    });
+                    }, err => { console.warn('Firebase sync error:', err); });
 
                     window.firebaseDb.ref('thresholds').on('value', snapshot => {
                         const val = snapshot.val();
@@ -2230,13 +3302,13 @@
                             window.renderThresholdPromoList();
                             window.renderCart();
                         }
-                    });
+                    }, err => { console.warn('Firebase sync error:', err); });
                 }
             } catch(e) {
                 console.log('Firebase fallback mode active:', e);
             }
 
-            // DEFAULT TO PUBLIC MODE ON LAUNCH
+            // Default to Public Mode on Launch
             window.currentRole = 'UMUM';
             window.switchTab('pos');
             window.updateBadgeCounts();
