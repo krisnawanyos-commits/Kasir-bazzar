@@ -2876,16 +2876,17 @@
             const valInput = document.getElementById('thresholdDiscountValue');
             if (!typeSelect || !container) return;
             const type = typeSelect.value;
+            
+            container.classList.remove('hidden');
             if (type === 'PERCENT') {
-                container.classList.remove('hidden');
                 if (labelEl) labelEl.innerText = 'Nilai Diskon Persentase (%) *';
                 if (valInput) valInput.placeholder = '10';
             } else if (type === 'NOMINAL') {
-                container.classList.remove('hidden');
                 if (labelEl) labelEl.innerText = 'Nilai Potongan Diskon (Rp) *';
                 if (valInput) valInput.placeholder = '25000';
-            } else { 
-                container.classList.add('hidden');
+            } else if (type === 'GIMMICK') {
+                if (labelEl) labelEl.innerText = 'Jumlah Kuota Free Bonus / Gimmick (Pcs) *';
+                if (valInput) valInput.placeholder = '2';
             }
         };
 
@@ -2897,7 +2898,7 @@
             document.getElementById('thresholdName').value = threshold.name || '';
             document.getElementById('thresholdTypeSelect').value = threshold.type || 'PERCENT';
             document.getElementById('thresholdMinAmount').value = threshold.minAmount || 0;
-            document.getElementById('thresholdDiscountValue').value = threshold.value || 0;
+            document.getElementById('thresholdDiscountValue').value = threshold.value || threshold.rewardCount || 1;
             document.getElementById('thresholdLabel').value = threshold.label || '';
 
             window.handleThresholdTypeChange();
