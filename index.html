@@ -385,7 +385,7 @@
                                 <tr>
                                     <th class="p-2.5">Brand</th>
                                     <th class="p-2.5 text-center">Pcs Terjual</th>
-                                    <th class="p-2.5 text-right">Total Revenue</th>
+                                    <th class="p-2.5 text-right">Total Net Revenue</th>
                                 </tr>
                             </thead>
                             <tbody id="reportBrandSummary" class="divide-y divide-slate-100">
@@ -407,7 +407,7 @@
                                 <th class="p-3">SKU & Nama Barang</th>
                                 <th class="p-3">Brand</th>
                                 <th class="p-3 text-center">Total Terjual (Pcs)</th>
-                                <th class="p-3 text-right">Total Revenue</th>
+                                <th class="p-3 text-right">Total Net Revenue</th>
                             </tr>
                         </thead>
                         <tbody id="reportTopProducts" class="divide-y divide-slate-100">
@@ -481,7 +481,6 @@
             </div>
         </section>
     </main>
-
 
     <!-- Modal Threshold Promo -->
     <div id="modalThresholdPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -1232,6 +1231,104 @@
         window.kasirPin = window.safeLocalStorage.getItem('kasir_pin') || '5678';
         window.currentRole = 'UMUM';
 
+        // Calculate Raw Item Line Total (before transaction-level discounts)
+        window.getItemRawLineTotal = function(item) {
+            if (!item) return 0;
+            if (typeof item.lineTotal === 'number' && !isNaN(item.lineTotal) && item.lineTotal > 0) {
+                return item.lineTotal;
+            }
+            const qty = Number(item.qty || 1);
+            const price = Number(item.price || 0);
+            const mode = item.promoMode || 'NORMAL';
+            
+            if (mode === 'BONUS') return 0;
+            if (mode === 'PAKET') {
+                const bQty = Number(item.bundleQty || 2);
+                const bPrice = Number(item.bundlePrice || price * bQty);
+                const bCount = Number(item.bundleCount || Math.floor(qty / bQty) || 1);
+                return bCount * bPrice;
+            }
+            if (mode === 'BOGO') {
+                const pairs = Math.floor(qty / 2);
+                const rem = qty % 2;
+                return (pairs * price) + (rem * price);
+            }
+            return price * qty;
+        };
+
+        window.getItemLineTotal = function(item) {
+            return window.getItemRawLineTotal(item);
+        };
+
+        // Proportional Net Revenue Allocation per Item (Guarantees sum(items) === tx.grandTotal)
+        window.getTxAllocatedItemRevenues = function(tx) {
+            if (!tx) return [];
+            const items = window.normalizeArray(tx.items);
+            const gTotal = Number(tx.grandTotal || tx.total || 0);
+
+            if (items.length === 0) return [];
+            if (gTotal <= 0) {
+                return items.map(i => ({
+                    item: i,
+                    netRevenue: 0,
+                    rawSubtotal: Number(i.price || 0) * Number(i.qty || 1),
+                    itemDiscount: Number(i.price || 0) * Number(i.qty || 1)
+                }));
+            }
+
+            const rawTotals = items.map(it => {
+                let raw = window.getItemRawLineTotal(it);
+                if (raw <= 0 && Number(it.price || 0) > 0 && it.promoMode !== 'BONUS') {
+                    raw = Number(it.price || 0) * Number(it.qty || 1);
+                }
+                return raw;
+            });
+
+            const sumRaw = rawTotals.reduce((a, b) => a + b, 0);
+
+            if (sumRaw <= 0) {
+                return items.map(i => ({
+                    item: i,
+                    netRevenue: 0,
+                    rawSubtotal: 0,
+                    itemDiscount: 0
+                }));
+            }
+
+            let allocatedTotal = 0;
+            let lastNonZeroIdx = -1;
+            for (let k = items.length - 1; k >= 0; k--) {
+                if (rawTotals[k] > 0) {
+                    lastNonZeroIdx = k;
+                    break;
+                }
+            }
+
+            const results = [];
+            items.forEach((it, idx) => {
+                const raw = rawTotals[idx];
+                let net = 0;
+                if (raw > 0) {
+                    if (idx === lastNonZeroIdx) {
+                        net = Math.max(0, gTotal - allocatedTotal);
+                    } else {
+                        net = Math.round((raw / sumRaw) * gTotal);
+                        allocatedTotal += net;
+                    }
+                }
+                const normalSubtotal = Number(it.price || 0) * Number(it.qty || 1);
+                const disc = Math.max(0, normalSubtotal - net);
+                results.push({
+                    item: it,
+                    netRevenue: net,
+                    rawSubtotal: normalSubtotal,
+                    itemDiscount: disc
+                });
+            });
+
+            return results;
+        };
+
         window.showToast = function(msg, type = 'info') {
             const container = document.getElementById('toastContainer');
             if (!container) return;
@@ -1698,6 +1795,7 @@
                     promoBadgeHtml = `<span class="px-1.5 py-0.5 bg-emerald-600 text-white rounded font-extrabold text-[9px] uppercase">Free Bonus</span>`;
                 }
 
+                item.lineTotal = lineTotal; // Save line total explicitly on cart item
                 grandFinalTotal += lineTotal;
 
                 return `
@@ -1774,7 +1872,7 @@
 
             // MULTI-THRESHOLD STACKING CALCULATOR
             let thresDiscountVal = 0;
-            let eligibleGimmickQuotas = 0;
+            let highestGimmickQuota = 0;
             const thresList = window.normalizeArray(window.thresholdPromos).sort((a,b) => a.minAmount - b.minAmount);
 
             thresList.forEach(t => {
@@ -1784,7 +1882,7 @@
                     } else if (t.type === 'NOMINAL') {
                         thresDiscountVal += (t.value || 0);
                     } else if (t.type === 'GIMMICK') {
-                        eligibleGimmickQuotas += (t.value || t.rewardCount || 1);
+                        highestGimmickQuota = (t.rewardCount || t.value || 1);
                     }
                 }
             });
@@ -1824,12 +1922,12 @@
                                 </div>
                             `;
                         }
-                        if (eligibleGimmickQuotas > 0) {
+                        if (highestGimmickQuota > 0) {
                             html += `
                                 <div class="flex items-center justify-between text-amber-900">
                                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-gift text-amber-600"></i> Klaim Bonus Gimmick</span>
-                                    <button onclick="window.openClaimGimmickModal(${eligibleGimmickQuotas})" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-[10px] shadow-sm transition">
-                                        Klaim Bonus (${eligibleGimmickQuotas} Pcs)
+                                    <button onclick="window.openClaimGimmickModal(${highestGimmickQuota})" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-[10px] shadow-sm transition">
+                                        Klaim Bonus (${highestGimmickQuota} Pcs)
                                     </button>
                                 </div>
                             `;
@@ -1897,7 +1995,7 @@
                 itemsContainer.innerHTML = window.cart.map(i => `
                     <div class="flex justify-between text-slate-700 font-medium">
                         <span>${i.name} (x${i.qty})</span>
-                        <span class="font-bold">Rp ${(i.price * i.qty).toLocaleString('id-ID')}</span>
+                        <span class="font-bold">Rp ${window.getItemLineTotal(i).toLocaleString('id-ID')}</span>
                     </div>
                 `).join('');
             }
@@ -1924,6 +2022,12 @@
             const dateStr = now.toISOString().split('T')[0];
             const timeStr = now.toTimeString().split(' ')[0].slice(0, 5);
 
+            // Create items snapshot with calculated line totals
+            const itemsSnapshot = window.cart.map(i => ({
+                ...i,
+                lineTotal: window.getItemLineTotal(i)
+            }));
+
             const newTx = {
                 id: txId,
                 createdAt: nowMs,
@@ -1934,7 +2038,7 @@
                 customerName: customer,
                 method: method,
                 paymentMethod: method,
-                items: [...window.cart],
+                items: itemsSnapshot,
                 subtotal: totals.subtotal,
                 promoDiscount: totals.promoDiscount,
                 thresholdDiscount: totals.thresholdDiscount,
@@ -2031,22 +2135,21 @@
                 totalDiscounts += disc;
                 if (paymentMap[method] !== undefined) paymentMap[method] += gTotal;
 
-                const items = window.normalizeArray(tx.items);
-                items.forEach(item => {
+                const allocatedItems = window.getTxAllocatedItemRevenues(tx);
+                allocatedItems.forEach(({ item, netRevenue }) => {
                     const itemQty = Number(item.qty || 1);
-                    const itemPrice = Number(item.price || 0);
                     totalPcs += itemQty;
 
                     const b = item.brand || 'Lainnya';
                     if (!brandMap[b]) brandMap[b] = { pcs: 0, revenue: 0 };
                     brandMap[b].pcs += itemQty;
-                    brandMap[b].revenue += (itemPrice * itemQty);
+                    brandMap[b].revenue += netRevenue;
 
                     if (!productSalesMap[item.sku]) {
                         productSalesMap[item.sku] = { sku: item.sku, name: item.name, brand: item.brand, pcs: 0, revenue: 0 };
                     }
                     productSalesMap[item.sku].pcs += itemQty;
-                    productSalesMap[item.sku].revenue += (itemPrice * itemQty);
+                    productSalesMap[item.sku].revenue += netRevenue;
                 });
             });
 
@@ -2182,7 +2285,7 @@
                     ${window.normalizeArray(tx.items).map(i => `
                         <div class="flex justify-between text-[11px]">
                             <span>${i.name} x${i.qty}</span>
-                            <span class="font-bold">Rp ${(i.price * i.qty).toLocaleString('id-ID')}</span>
+                            <span class="font-bold">Rp ${window.getItemLineTotal(i).toLocaleString('id-ID')}</span>
                         </div>
                     `).join('')}
                 </div>
@@ -2325,26 +2428,25 @@
         };
 
         window.exportDetailedItemsCSV = function() {
-            let csv = "ID Transaksi,Tanggal,Waktu,Metode Pembayaran,Nama Pembeli,Barcode,SKU,Nama Barang,Brand,Subsidiary,Harga Satuan Normal (Rp),Qty Terjual (Pcs),Subtotal Normal Item (Rp),Diskon Transaksi (Rp),Grand Total Transaksi (Rp)\n";
+            let csv = "ID Transaksi,Tanggal,Waktu,Metode Pembayaran,Nama Pembeli,Barcode,SKU,Nama Barang,Brand,Subsidiary,Harga Normal Satuan (Rp),Qty Terjual (Pcs),Subtotal Normal (Rp),Diskon Promo Item (Rp),Total Net Revenue Item (Rp),Diskon Nota Transaksi (Rp),Grand Total Transaksi (Rp)\n";
             window.normalizeArray(window.transactions).forEach(t => {
-                const items = window.normalizeArray(t.items);
                 const discTx = Number(t.discount || t.totalDiscount || 0);
                 const grandTotalTx = Number(t.grandTotal || t.total || 0);
 
-                items.forEach(i => {
-                    const itemQty = Number(i.qty || 1);
-                    const itemPrice = Number(i.price || 0);
-                    const itemTotal = itemQty * itemPrice;
+                const allocatedItems = window.getTxAllocatedItemRevenues(t);
+                allocatedItems.forEach(({ item, netRevenue, rawSubtotal, itemDiscount }) => {
+                    const itemQty = Number(item.qty || 1);
+                    const itemPrice = Number(item.price || 0);
 
                     const prod = window.normalizeArray(window.products).find(p => 
-                        String(p.sku || '').toLowerCase() === String(i.sku || '').toLowerCase() || 
-                        String(p.id) === String(i.id)
+                        String(p.sku || '').toLowerCase() === String(item.sku || '').toLowerCase() || 
+                        String(p.id) === String(item.id)
                     );
-                    const rawBarcode = i.barcode || (prod ? prod.barcode : '') || '';
+                    const rawBarcode = item.barcode || (prod ? prod.barcode : '') || '';
                     const barcode = rawBarcode ? `'${rawBarcode}` : '-';
-                    const subsidiary = i.subsidiary || (prod ? prod.subsidiary : '') || '-';
+                    const subsidiary = item.subsidiary || (prod ? prod.subsidiary : '') || '-';
 
-                    csv += `"${t.id || ''}","${t.date || ''}","${t.time || ''}","${t.method || t.paymentMethod || 'QRIS'}","${(t.customer || t.customerName || 'Umum').replace(/"/g, '""')}","${barcode}","${i.sku || ''}","${(i.name || '').replace(/"/g, '""')}","${i.brand || ''}","${subsidiary}",${itemPrice},${itemQty},${itemTotal},${discTx},${grandTotalTx}\n`;
+                    csv += `"${t.id || ''}","${t.date || ''}","${t.time || ''}","${t.method || t.paymentMethod || 'QRIS'}","${(t.customer || t.customerName || 'Umum').replace(/"/g, '""')}","${barcode}","${item.sku || ''}","${(item.name || '').replace(/"/g, '""')}","${item.brand || ''}","${subsidiary}",${itemPrice},${itemQty},${rawSubtotal},${itemDiscount},${netRevenue},${discTx},${grandTotalTx}\n`;
                 });
             });
 
@@ -2755,7 +2857,7 @@
 
             window.logStockMovement(prod.sku, prod.name, changeStr, prod.stock, 'ADJUSTMENT', reason, notes);
 
-            window.safeLocalStoragesetItem('bazaar_products', JSON.stringify(window.products));
+            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
             if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
 
             window.closeModalAdjustment();
@@ -3169,7 +3271,9 @@
                 brand: prod.brand,
                 subsidiary: prod.subsidiary || '',
                 price: 0,
-                qty: 1
+                qty: 1,
+                lineTotal: 0,
+                promoMode: 'BONUS'
             });
 
             window.renderCart();
