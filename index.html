@@ -421,9 +421,14 @@
                     <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
                         <i class="fa-solid fa-list text-slate-600"></i> Riwayat & Log Transaksi Cashless
                     </h3>
-                    <button onclick="window.exportToCSV()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                        <i class="fa-solid fa-download text-emerald-400"></i> Export Laporan CSV
-                    </button>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="window.exportToCSV()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Export Rekap Transaksi + Rincian SKU & Qty">
+                            <i class="fa-solid fa-download text-emerald-400"></i> Export Rekap CSV (+SKU & Qty)
+                        </button>
+                        <button onclick="window.exportDetailedItemsCSV()" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Export Line-by-Line Item Terjual Per SKU">
+                            <i class="fa-solid fa-file-csv text-amber-300"></i> Export Detail Item Per-SKU
+                        </button>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -2213,15 +2218,40 @@
         window.exportStockToCSV = function() { window.exportPriceListCSV(); };
 
         window.exportToCSV = function() {
-            let csv = "ID Transaksi,Tanggal,Waktu,Metode,Pembeli,Subtotal,Diskon,Grand Total\n";
+            let csv = "ID Transaksi,Tanggal,Waktu,Metode,Pembeli,Total Qty (Pcs),Rincian SKU & Qty,Subtotal,Diskon,Grand Total\n";
             window.normalizeArray(window.transactions).forEach(t => {
-                csv += `"${t.id}","${t.date||''}","${t.time||''}","${t.method||t.paymentMethod||'QRIS'}","${t.customer||t.customerName||'Umum'}",${t.subtotal||0},${t.discount||t.totalDiscount||0},${t.grandTotal||0}\n`;
+                const items = window.normalizeArray(t.items);
+                const totalPcs = items.reduce((sum, i) => sum + Number(i.qty || 0), 0);
+                const skuDetails = items.map(i => `[${i.sku || 'N/A'}] ${i.name || ''} x${i.qty || 1} Pcs`).join(' | ');
+
+                csv += `"${t.id || ''}","${t.date || ''}","${t.time || ''}","${t.method || t.paymentMethod || 'QRIS'}","${(t.customer || t.customerName || 'Umum').replace(/"/g, '""')}",${totalPcs},"${skuDetails.replace(/"/g, '""')}",${t.subtotal || 0},${t.discount || t.totalDiscount || 0},${t.grandTotal || 0}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.setAttribute("download", `Rekap_Sales_Bazaar_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        window.exportDetailedItemsCSV = function() {
+            let csv = "ID Transaksi,Tanggal,Waktu,Metode Pembayaran,Nama Pembeli,SKU,Barcode,Nama Barang,Brand,Subsidiary,Harga Satuan (Rp),Qty (Pcs),Subtotal Item (Rp)\n";
+            window.normalizeArray(window.transactions).forEach(t => {
+                const items = window.normalizeArray(t.items);
+                items.forEach(i => {
+                    const itemQty = Number(i.qty || 1);
+                    const itemPrice = Number(i.price || 0);
+                    const itemTotal = itemQty * itemPrice;
+                    csv += `"${t.id || ''}","${t.date || ''}","${t.time || ''}","${t.method || t.paymentMethod || 'QRIS'}","${(t.customer || t.customerName || 'Umum').replace(/"/g, '""')}","${i.sku || ''}","${i.barcode || ''}","${(i.name || '').replace(/"/g, '""')}","${i.brand || ''}","${i.subsidiary || ''}",${itemPrice},${itemQty},${itemTotal}\n`;
+                });
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `Detail_Items_Terjual_Bazaar_${Date.now()}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
