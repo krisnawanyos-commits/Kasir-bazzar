@@ -482,8 +482,7 @@
         </section>
     </main>
 
-    <!-- Modals Section -->
-    
+
     <!-- Modal Threshold Promo -->
     <div id="modalThresholdPromo" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-6 space-y-4 animate-fade-in">
@@ -845,9 +844,14 @@
                     <input type="text" id="adjustNotes" placeholder="Misal: 2 pcs kemasan pecah saat pengiriman" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="window.closeModalAdjustment()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-sm">Simpan Hasil Opname</button>
+                <div class="flex items-center justify-between pt-2">
+                    <button type="button" onclick="window.downloadOpnameTemplate()" class="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold rounded-xl transition text-xs flex items-center gap-1.5" title="Unduh Template CSV Opname untuk Seluruh SKU">
+                        <i class="fa-solid fa-file-csv"></i> Unduh Template CSV Opname
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="window.closeModalAdjustment()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-sm">Simpan Hasil Opname</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1143,9 +1147,8 @@
 
     <div id="printableArea" class="hidden"></div>
 
-    <!-- Application Scripting Logic -->
     <script>
-        // Global Error Boundary to prevent iframe runner crashes
+        // Global Error Boundary to catch any script errors safely
         window.onerror = function(msg, url, lineNo, columnNo, error) {
             console.warn('Unhandled Script Warning:', msg, error);
             return true;
@@ -1302,6 +1305,67 @@
                 window.renderReports();
             }
             window.applyRolePermissions();
+        };
+
+        window.renderMasterTable = function() {
+            const tbody = document.getElementById('masterTableBody');
+            const searchVal = (document.getElementById('masterSearch')?.value || '').toLowerCase().trim();
+            if (!tbody) return;
+
+            const prods = window.normalizeArray(window.products);
+            const filtered = prods.filter(p => {
+                const nameStr = String(p.name || '').toLowerCase();
+                const skuStr = String(p.sku || '').toLowerCase();
+                const barStr = String(p.barcode || '').toLowerCase();
+                const brandStr = String(p.brand || '').toLowerCase();
+                return nameStr.includes(searchVal) || skuStr.includes(searchVal) || barStr.includes(searchVal) || brandStr.includes(searchVal);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 text-xs font-semibold">Tidak ada SKU cocok ditemukan.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => `
+                <tr class="hover:bg-slate-50 text-xs">
+                    <td class="p-3.5">
+                        <div class="font-bold text-slate-800 font-mono">${p.sku}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">${p.barcode || '-'}</div>
+                    </td>
+                    <td class="p-3.5 font-bold text-slate-900">${p.name}</td>
+                    <td class="p-3.5">
+                        <span class="font-bold text-slate-700">${p.brand || '-'}</span> 
+                        <span class="text-slate-400">(${p.subsidiary || '-'})</span>
+                    </td>
+                    <td class="p-3.5 font-extrabold text-blue-700">Rp ${Number(p.price || 0).toLocaleString('id-ID')}</td>
+                    <td class="p-3.5 font-bold ${p.stock > 10 ? 'text-emerald-600' : p.stock > 0 ? 'text-amber-600' : 'text-rose-600'}">${p.stock} Pcs</td>
+                    <td class="p-3.5">
+                        <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-[10px]">${p.promoTag || '-'}</span>
+                    </td>
+                    <td class="p-3.5 text-right space-x-1">
+                        <button onclick="window.editSKU('${p.id}')" class="spv-only p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition" title="Edit SKU"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="window.deleteSKU('${p.id}')" class="spv-only p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition" title="Hapus SKU"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            window.applyRolePermissions();
+        };
+
+        window.downloadOpnameTemplate = function() {
+            let csv = "Barcode / SKU,Jumlah Opname Fisik (Pcs),Catatan Opname\n";
+            window.normalizeArray(window.products).forEach(p => {
+                const bc = p.barcode ? `'${p.barcode}` : p.sku;
+                csv += `"${bc}",${p.stock},"Opname Fisik ${p.name.replace(/"/g, '""')}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", `Template_Opname_Stok_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         };
 
         window.renderPublicPromoHighlights = function() {
@@ -1482,8 +1546,10 @@
                 window.cart.push({
                     id: prod.id,
                     sku: prod.sku,
+                    barcode: prod.barcode || '',
                     name: prod.name,
                     brand: prod.brand,
+                    subsidiary: prod.subsidiary || '',
                     price: prod.price,
                     qty: defaultMode === 'PAKET' ? (numBundles * bundleQty) : addQty,
                     promoMode: defaultMode,
@@ -1904,10 +1970,8 @@
             window.showToast(`Transaksi ${txId} Berhasil!`, 'info');
         };
 
-        // Precision Date Parser for Transaction Sorting
         window.parseTxTimestamp = function(tx) {
             if (!tx) return 0;
-
             if (typeof tx.createdAt === 'number' && tx.createdAt > 0) return tx.createdAt;
 
             if (tx.id && typeof tx.id === 'string' && tx.id.startsWith('TRX-')) {
@@ -1937,7 +2001,6 @@
             return isNaN(parsedMs) ? 0 : parsedMs;
         };
 
-        // Transaction Table Sorting Handler
         window.setTxSort = function(column) {
             if (window.txSortColumn === column) {
                 window.txSortDirection = window.txSortDirection === 'asc' ? 'desc' : 'asc';
@@ -2203,7 +2266,8 @@
         window.exportPriceListCSV = function() {
             let csv = "Barcode,SKU,Brand,Subsidiary,Nama Barang,Harga Jual,Sisa Stok,Promo Tag\n";
             window.normalizeArray(window.products).forEach(p => {
-                csv += `"${p.barcode||''}","${p.sku}","${p.brand}","${p.subsidiary}","${(p.name||'').replace(/"/g, '""')}",${p.price},${p.stock},"${p.promoTag||''}"\n`;
+                const bc = p.barcode ? `'${p.barcode}` : '';
+                csv += `"${bc}","${p.sku}","${p.brand}","${p.subsidiary}","${(p.name||'').replace(/"/g, '""')}",${p.price},${p.stock},"${p.promoTag||''}"\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -2218,40 +2282,76 @@
         window.exportStockToCSV = function() { window.exportPriceListCSV(); };
 
         window.exportToCSV = function() {
-            let csv = "ID Transaksi,Tanggal,Waktu,Metode,Pembeli,Total Qty (Pcs),Rincian SKU & Qty,Subtotal,Diskon,Grand Total\n";
+            let csv = "ID Transaksi,Tanggal,Waktu,Metode Pembayaran,Nama Pembeli,Total Qty (Pcs),Rincian Barcode SKU & Qty,Subtotal Normal (Rp),Diskon Program Promo (Rp),Diskon Min Belanja (Rp),Diskon Manual (Rp),Total Diskon (Rp),Grand Total Bayar (Rp)\n";
             window.normalizeArray(window.transactions).forEach(t => {
                 const items = window.normalizeArray(t.items);
                 const totalPcs = items.reduce((sum, i) => sum + Number(i.qty || 0), 0);
-                const skuDetails = items.map(i => `[${i.sku || 'N/A'}] ${i.name || ''} x${i.qty || 1} Pcs`).join(' | ');
+                
+                const skuDetails = items.map(i => {
+                    const prod = window.normalizeArray(window.products).find(p => 
+                        String(p.sku || '').toLowerCase() === String(i.sku || '').toLowerCase() || 
+                        String(p.id) === String(i.id)
+                    );
+                    const rawBarcode = i.barcode || (prod ? prod.barcode : '') || '';
+                    const barcode = rawBarcode ? `'${rawBarcode}` : '-';
+                    return `[Barcode:${barcode} | SKU:${i.sku || 'N/A'}] ${i.name || ''} x${i.qty || 1} Pcs`;
+                }).join(' | ');
 
-                csv += `"${t.id || ''}","${t.date || ''}","${t.time || ''}","${t.method || t.paymentMethod || 'QRIS'}","${(t.customer || t.customerName || 'Umum').replace(/"/g, '""')}",${totalPcs},"${skuDetails.replace(/"/g, '""')}",${t.subtotal || 0},${t.discount || t.totalDiscount || 0},${t.grandTotal || 0}\n`;
+                const subtotal = Number(t.subtotal || 0);
+                const promoDisc = Number(t.promoDiscount || 0);
+                const thresDisc = Number(t.thresholdDiscount || 0);
+                const manualDisc = Number(t.manualDiscount || 0);
+                
+                let totalDisc = Number(t.discount || t.totalDiscount || 0);
+                if (totalDisc === 0 && (promoDisc + thresDisc + manualDisc > 0)) {
+                    totalDisc = promoDisc + thresDisc + manualDisc;
+                }
+
+                let grandTotal = Number(t.grandTotal || t.total || 0);
+                if (grandTotal === 0 && subtotal > 0) {
+                    grandTotal = Math.max(0, subtotal - totalDisc);
+                }
+
+                csv += `"${t.id || ''}","${t.date || ''}","${t.time || ''}","${t.method || t.paymentMethod || 'QRIS'}","${(t.customer || t.customerName || 'Umum').replace(/"/g, '""')}",${totalPcs},"${skuDetails.replace(/"/g, '""')}",${subtotal},${promoDisc},${thresDisc},${manualDisc},${totalDisc},${grandTotal}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", `Rekap_Sales_Bazaar_${Date.now()}.csv`);
+            link.setAttribute("download", `Rekap_Sales_Bazaar_Lengkap_${Date.now()}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         };
 
         window.exportDetailedItemsCSV = function() {
-            let csv = "ID Transaksi,Tanggal,Waktu,Metode Pembayaran,Nama Pembeli,SKU,Barcode,Nama Barang,Brand,Subsidiary,Harga Satuan (Rp),Qty (Pcs),Subtotal Item (Rp)\n";
+            let csv = "ID Transaksi,Tanggal,Waktu,Metode Pembayaran,Nama Pembeli,Barcode,SKU,Nama Barang,Brand,Subsidiary,Harga Satuan Normal (Rp),Qty Terjual (Pcs),Subtotal Normal Item (Rp),Diskon Transaksi (Rp),Grand Total Transaksi (Rp)\n";
             window.normalizeArray(window.transactions).forEach(t => {
                 const items = window.normalizeArray(t.items);
+                const discTx = Number(t.discount || t.totalDiscount || 0);
+                const grandTotalTx = Number(t.grandTotal || t.total || 0);
+
                 items.forEach(i => {
                     const itemQty = Number(i.qty || 1);
                     const itemPrice = Number(i.price || 0);
                     const itemTotal = itemQty * itemPrice;
-                    csv += `"${t.id || ''}","${t.date || ''}","${t.time || ''}","${t.method || t.paymentMethod || 'QRIS'}","${(t.customer || t.customerName || 'Umum').replace(/"/g, '""')}","${i.sku || ''}","${i.barcode || ''}","${(i.name || '').replace(/"/g, '""')}","${i.brand || ''}","${i.subsidiary || ''}",${itemPrice},${itemQty},${itemTotal}\n`;
+
+                    const prod = window.normalizeArray(window.products).find(p => 
+                        String(p.sku || '').toLowerCase() === String(i.sku || '').toLowerCase() || 
+                        String(p.id) === String(i.id)
+                    );
+                    const rawBarcode = i.barcode || (prod ? prod.barcode : '') || '';
+                    const barcode = rawBarcode ? `'${rawBarcode}` : '-';
+                    const subsidiary = i.subsidiary || (prod ? prod.subsidiary : '') || '-';
+
+                    csv += `"${t.id || ''}","${t.date || ''}","${t.time || ''}","${t.method || t.paymentMethod || 'QRIS'}","${(t.customer || t.customerName || 'Umum').replace(/"/g, '""')}","${barcode}","${i.sku || ''}","${(i.name || '').replace(/"/g, '""')}","${i.brand || ''}","${subsidiary}",${itemPrice},${itemQty},${itemTotal},${discTx},${grandTotalTx}\n`;
                 });
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", `Detail_Items_Terjual_Bazaar_${Date.now()}.csv`);
+            link.setAttribute("download", `Detail_Items_Terjual_PerSKU_${Date.now()}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -2655,7 +2755,7 @@
 
             window.logStockMovement(prod.sku, prod.name, changeStr, prod.stock, 'ADJUSTMENT', reason, notes);
 
-            window.safeLocalStorage.setItem('bazaar_products', JSON.stringify(window.products));
+            window.safeLocalStoragesetItem('bazaar_products', JSON.stringify(window.products));
             if (window.firebaseDb) window.firebaseDb.ref('products').set(window.products);
 
             window.closeModalAdjustment();
@@ -3064,8 +3164,10 @@
             window.cart.push({
                 id: prod.id,
                 sku: prod.sku,
+                barcode: prod.barcode || '',
                 name: `[BONUS GIMMICK] ${prod.name}`,
                 brand: prod.brand,
+                subsidiary: prod.subsidiary || '',
                 price: 0,
                 qty: 1
             });
@@ -3073,43 +3175,6 @@
             window.renderCart();
             window.showToast(`Bonus ${prod.name} ditambahkan!`, 'info');
             window.closeClaimGimmickModal();
-        };
-
-        window.renderMasterTable = function() {
-            const tbody = document.getElementById('masterTableBody');
-            const searchVal = (document.getElementById('masterSearch')?.value || '').toLowerCase().trim();
-
-            if (!tbody) return;
-
-            const prods = window.normalizeArray(window.products);
-            const filtered = prods.filter(p => 
-                String(p.name || '').toLowerCase().includes(searchVal) ||
-                String(p.sku || '').toLowerCase().includes(searchVal) ||
-                String(p.barcode || '').toLowerCase().includes(searchVal) ||
-                String(p.brand || '').toLowerCase().includes(searchVal)
-            );
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 text-xs">Tidak ada SKU terdaftar.</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(p => `
-                <tr class="hover:bg-slate-50 text-xs">
-                    <td class="p-3.5"><div class="font-bold text-slate-800 font-mono">${p.sku}</div><div class="text-[10px] text-slate-400 font-mono">${p.barcode || '-'}</div></td>
-                    <td class="p-3.5 font-bold text-slate-900">${p.name}</td>
-                    <td class="p-3.5"><span class="font-bold text-slate-700">${p.brand}</span> <span class="text-slate-400">(${p.subsidiary})</span></td>
-                    <td class="p-3.5 font-extrabold text-blue-700">Rp ${Number(p.price || 0).toLocaleString('id-ID')}</td>
-                    <td class="p-3.5 font-bold ${p.stock > 10 ? 'text-emerald-600' : p.stock > 0 ? 'text-amber-600' : 'text-rose-600'}">${p.stock} Pcs</td>
-                    <td class="p-3.5"><span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-[10px]">${p.promoTag || '-'}</span></td>
-                    <td class="p-3.5 text-right space-x-1">
-                        <button onclick="window.editSKU('${p.id}')" class="spv-only p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold" title="Edit SKU"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="window.deleteSKU('${p.id}')" class="spv-only p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold" title="Hapus"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-
-            window.applyRolePermissions();
         };
 
         window.openModalAddSKU = function() {
